@@ -1,0 +1,17 @@
+.DS_Store
+/config.toml
+/storage/
+/.idea/
+/app/services/__pycache__
+/app/__pycache__/
+/app/config/__pycache__/
+/app/models/__pycache__/
+/app/utils/__pycache__/
+/*/__pycache__/*
+.vscode
+/**/.streamlit
+__pycache__
+logs/
+
+node_modules
+.history
