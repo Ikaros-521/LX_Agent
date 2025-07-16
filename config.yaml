@@ -1,0 +1,87 @@
+# LX_Agent 配置文件
+
+# 大模型配置
+llm:
+  # 默认使用的大模型
+  default: "openai"
+  # 大模型服务配置
+  services:
+    # OpenAI API
+    openai:
+      type: "openai"
+      base_url: "http://47.96.136.235:3000/v1"
+      api_key: "sk-ZrTz6C3ZGsv2jCICA28f458921D74a0c829d1eA4AcC9Af55"
+      model: "Qwen/Qwen3-8B"
+      temperature: 0.7
+      max_tokens: 4096
+    # 本地大模型
+    local:
+      type: "local"
+      model_path: "path/to/local/model"
+      temperature: 0.7
+      max_tokens: 4096
+
+# MCP配置
+mcp:
+  # 路由策略: capability_match(能力匹配), priority_first(优先级优先), load_balance(负载均衡)
+  routing_strategy: "capability_match"
+  # MCP服务配置
+  services:
+    # 本地MCP
+    local:
+      type: "local"
+      enabled: true
+      priority: 10
+      # 支持的能力
+      capabilities: ["file", "process", "shell", "mouse_keyboard"]
+    # 云端MCP
+    cloud:
+      type: "cloud"
+      enabled: true
+      priority: 5
+      url: "https://example.com/mcp/api"
+      api_key: "YOUR_CLOUD_MCP_API_KEY"
+      timeout: 30
+      capabilities: ["file", "browser", "mouse", "keyboard", "process", "shell"]
+    # 自定义MCP示例
+    custom:
+      type: "custom"
+      enabled: false
+      priority: 1
+      module: "custom_mcp.adapter"
+      class: "CustomMCPAdapter"
+      config_path: "path/to/custom/config"
+      capabilities: ["custom_capability"]
+
+# 工具配置
+tools:
+  # 启用的工具模块
+  enabled:
+    - "file"
+    - "browser"
+    - "process"
+  # 工具模块配置
+  modules:
+    file:
+      allowed_paths:
+        - "C:/Users"
+        - "D:/Projects"
+      denied_paths:
+        - "C:/Windows"
+        - "C:/Program Files"
+    browser:
+      default_browser: "chrome"
+      headless: false
+
+# 安全配置
+security:
+  # 是否需要二次确认shell命令
+  shell_confirm: true
+
+# 日志配置
+logging:
+  level: "INFO"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  file: "logs/agent.log"
+  max_size: 10485760  # 10MB
+  backup_count: 5
