@@ -4,14 +4,14 @@ import os
 import sys
 import time
 import signal
-import logging
+from loguru import logger
 import platform
 import subprocess
 from typing import Dict, Any, List, Optional
 
 from common.utils import run_command, is_windows
 
-logger = logging.getLogger(__name__)
+
 
 class ProcessTool:
     """

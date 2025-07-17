@@ -2,13 +2,13 @@
 
 from typing import Dict, Any, Optional
 import importlib
-import logging
+from loguru import logger
 
 from mcp.base import BaseMCP
 from mcp.local_mcp import LocalMCPAdapter
 from mcp.cloud_mcp import CloudMCPAdapter
 
-logger = logging.getLogger(__name__)
+
 
 class MCPFactory:
     """

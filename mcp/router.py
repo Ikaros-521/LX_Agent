@@ -1,13 +1,13 @@
 # MCP路由器实现
 
-import logging
+from loguru import logger
 from typing import Dict, Any, List, Optional, Tuple
 import random
 
 from mcp.base import BaseMCP
 from mcp.factory import MCPFactory
 
-logger = logging.getLogger(__name__)
+
 
 class MCPRouter:
     """

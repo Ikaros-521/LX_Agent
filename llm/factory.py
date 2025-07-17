@@ -1,6 +1,6 @@
 # LLM工厂类
 
-import logging
+from loguru import logger
 from typing import Dict, Any, Optional
 
 from .base import BaseLLM
@@ -8,7 +8,7 @@ from .openai import OpenAILLM
 from .anthropic import AnthropicLLM
 from .local import LocalLLM
 
-logger = logging.getLogger(__name__)
+
 
 class LLMFactory:
     """

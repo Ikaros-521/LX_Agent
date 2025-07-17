@@ -2,15 +2,10 @@
 
 import os
 import sys
-import logging
 
 from config import Config
-from logger import setup_logging
+from loguru import logger
 from core.agent import Agent
-
-# 设置日志
-setup_logging({"level": "INFO"})
-logger = logging.getLogger(__name__)
 
 def main():
     """

@@ -2,17 +2,17 @@
 
 import os
 import sys
-import logging
+from loguru import logger
 
 from config import Config
-from logger import setup_logging
+
 from mcp.router import MCPRouter
 from mcp.local_mcp import LocalMCPAdapter
 from mcp.cloud_mcp import CloudMCPAdapter
 
-# 设置日志
-setup_logging({"level": "DEBUG"})
-logger = logging.getLogger(__name__)
+
+
+
 
 def test_mcp_router():
     """

@@ -2,12 +2,12 @@
 
 import os
 import shutil
-import logging
+from loguru import logger
 from typing import Dict, Any, List, Optional
 
 from common.utils import ensure_dir, is_path_allowed, get_file_type, format_size
 
-logger = logging.getLogger(__name__)
+
 
 class FileTool:
     """

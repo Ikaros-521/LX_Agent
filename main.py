@@ -3,10 +3,9 @@
 import os
 import sys
 import argparse
-import logging
 
 from config import Config
-from logger import setup_logging
+from loguru import logger
 from core.agent import Agent
 
 def parse_args():
@@ -45,11 +44,12 @@ def main():
     # 加载配置
     config = Config(args.config)
     
-    # 设置日志
-    log_config = config.get_logging_config()
+    
+    log_config = config.get_logger_config()
     if args.verbose:
-        log_config["level"] = "DEBUG"
-    setup_logging(log_config)
+        logger.add(log_config["file"], level="DEBUG")
+    else:
+        logger.add(log_config["file"], level="INFO")
     
     # 创建Agent
     agent = Agent(config)
@@ -57,7 +57,7 @@ def main():
     try:
         # 初始化Agent
         if not agent.initialize():
-            logging.error("Failed to initialize Agent")
+            logger.error("Failed to initialize Agent")
             return 1
             
         # 如果没有提供命令，进入交互模式
@@ -70,10 +70,10 @@ def main():
             
         return 0
     except KeyboardInterrupt:
-        logging.info("Interrupted by user")
+        logger.info("Interrupted by user")
         return 0
     except Exception as e:
-        logging.error(f"Error: {str(e)}")
+        logger.error(f"Error: {str(e)}")
         return 1
     finally:
         # 关闭Agent
@@ -114,7 +114,7 @@ def interactive_mode(agent: Agent):
             print("\nInterrupted")
             break
         except Exception as e:
-            logging.error(f"Error: {str(e)}")
+            logger.error(f"Error: {str(e)}")
 
 def execute_command(agent: Agent, command: str):
     """

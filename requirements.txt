@@ -6,6 +6,11 @@ requests>=2.28.0
 colorlog>=6.7.0
 
 openai
+pyautogui
+pygetwindow
+pywin32
+
+loguru
 
 # 工具相关依赖（可选）
 # 如果需要浏览器控制功能，取消下面的注释

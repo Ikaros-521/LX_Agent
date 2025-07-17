@@ -4,10 +4,10 @@ import os
 import sys
 import platform
 import subprocess
-import logging
+from loguru import logger
 from typing import Dict, Any, List, Optional, Tuple
 
-logger = logging.getLogger(__name__)
+
 
 def is_windows() -> bool:
     """

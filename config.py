@@ -2,10 +2,10 @@
 
 import os
 import yaml
-import logging
+from loguru import logger
 from typing import Dict, Any, Optional
 
-logger = logging.getLogger(__name__)
+
 
 class Config:
     """
@@ -111,7 +111,7 @@ class Config:
         """
         return self.config.get("tools", {})
     
-    def get_logging_config(self) -> Dict[str, Any]:
+    def get_logger_config(self) -> Dict[str, Any]:
         """
         获取日志配置
         

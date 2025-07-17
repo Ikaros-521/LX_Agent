@@ -4,14 +4,14 @@ import os
 import sys
 import unittest
 from unittest.mock import patch, MagicMock
-import logging
+from loguru import logger
 import tempfile
 import shutil
 
 # 添加项目根目录到路径
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from logger import setup_logging
+
 
 class TestLogger(unittest.TestCase):
     """
@@ -58,7 +58,7 @@ class TestLogger(unittest.TestCase):
         mock_logger = MagicMock()
         mock_get_logger.return_value = mock_logger
         
-        # 设置日志
+        
         logger = setup_logging(self.log_config)
         
         # 验证日志目录是否创建
@@ -80,7 +80,7 @@ class TestLogger(unittest.TestCase):
         invalid_config = self.log_config.copy()
         invalid_config["level"] = "INVALID"
         
-        # 设置日志
+        
         logger = setup_logging(invalid_config)
         
         # 验证日志级别是否设置为默认值
@@ -94,7 +94,7 @@ class TestLogger(unittest.TestCase):
         debug_config = self.log_config.copy()
         debug_config["level"] = "DEBUG"
         
-        # 设置日志
+        
         logger = setup_logging(debug_config)
         
         # 验证日志级别是否设置为DEBUG
@@ -108,7 +108,7 @@ class TestLogger(unittest.TestCase):
         warning_config = self.log_config.copy()
         warning_config["level"] = "WARNING"
         
-        # 设置日志
+        
         logger = setup_logging(warning_config)
         
         # 验证日志级别是否设置为WARNING
@@ -122,7 +122,7 @@ class TestLogger(unittest.TestCase):
         error_config = self.log_config.copy()
         error_config["level"] = "ERROR"
         
-        # 设置日志
+        
         logger = setup_logging(error_config)
         
         # 验证日志级别是否设置为ERROR
@@ -136,7 +136,7 @@ class TestLogger(unittest.TestCase):
         critical_config = self.log_config.copy()
         critical_config["level"] = "CRITICAL"
         
-        # 设置日志
+        
         logger = setup_logging(critical_config)
         
         # 验证日志级别是否设置为CRITICAL
@@ -150,7 +150,7 @@ class TestLogger(unittest.TestCase):
         no_file_config = self.log_config.copy()
         del no_file_config["file"]
         
-        # 设置日志
+        
         logger = setup_logging(no_file_config)
         
         # 验证只有控制台处理器
@@ -161,7 +161,7 @@ class TestLogger(unittest.TestCase):
         """
         测试实际记录日志
         """
-        # 设置日志
+        
         logger = setup_logging(self.log_config)
         
         # 记录日志

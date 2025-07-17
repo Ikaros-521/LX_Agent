@@ -1,14 +1,14 @@
 # Anthropic模型实现
 
 import os
-import logging
+from loguru import logger
 import requests
 from typing import Dict, List, Any, Optional, Union
 
 from .base import BaseLLM
 from common.utils import build_capabilities_prompt
 
-logger = logging.getLogger(__name__)
+
 
 class AnthropicLLM(BaseLLM):
     """

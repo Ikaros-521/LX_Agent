@@ -1,6 +1,6 @@
 # Agent类实现
 
-import logging
+from loguru import logger
 from typing import Dict, Any, List, Optional
 
 from config import Config
@@ -8,7 +8,7 @@ from mcp.router import MCPRouter
 from llm.factory import LLMFactory
 from llm.base import BaseLLM
 
-logger = logging.getLogger(__name__)
+
 
 class Agent:
     """
