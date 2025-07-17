@@ -127,3 +127,11 @@ class Config:
             Dict[str, Any]: 上下文配置
         """
         return self.config.get("context", {})
+
+    def get_security_config(self) -> Dict[str, Any]:
+        """
+        获取安全相关配置
+        Returns:
+            Dict[str, Any]: 安全配置
+        """
+        return self.config.get("security", {})

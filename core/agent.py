@@ -137,6 +137,20 @@ class Agent:
         else:
             tool_calls = []
         logger.info(f"LLM生成的工具调用: {tool_calls}")
+        # 检查危险工具
+        security_config = self.config.get_security_config()
+        dangerous_tools = security_config.get("dangerous_tools", ["execute_shell", "start_process"])
+        need_confirm_calls = []
+        for call in tool_calls:
+            if call.get("name") in dangerous_tools and security_config.get("shell_confirm", True):
+                need_confirm_calls.append(call)
+        if need_confirm_calls:
+            return {
+                "status": "need_confirm",
+                "message": f"检测到高危操作: {', '.join([c['name'] for c in need_confirm_calls])}，是否确认执行？",
+                "dangerous_calls": need_confirm_calls,
+                "all_calls": tool_calls
+            }
         results = []
         for call in tool_calls:
             name = call.get("name")

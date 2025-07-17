@@ -77,6 +77,9 @@ tools:
 security:
   # 是否需要二次确认shell命令
   shell_confirm: true
+  dangerous_tools:
+    - execute_shell
+    - start_process
 
 # 日志配置
 logging:

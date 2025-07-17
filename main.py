@@ -128,12 +128,22 @@ def execute_command(agent: Agent, command: str, history=None):
     # 处理需要二次确认的shell命令
     if result.get("status") == "need_confirm":
         print(result["message"])
-        confirm = input("> ").strip().lower()
+        for call in result.get("dangerous_calls", []):
+            print(f"  工具: {call['name']}，参数: {call['arguments']}")
+        confirm = input("请确认是否执行上述高危操作？(yes/确认/y)：").strip().lower()
         if confirm in ("确认", "yes", "y"):
-            exec_result = agent.execute(result["shell_cmd"], ["shell"])
-            result = exec_result
+            # 批量执行所有工具调用
+            results = []
+            for call in result.get("all_calls", []):
+                res = agent.mcp_router.execute_tool_call(call["name"], call["arguments"])
+                results.append({"tool": call["name"], "result": res})
+            # 输出结果
+            for r in results:
+                print(f"[{r['tool']}] 执行结果: {r['result']}")
+            print("已执行。")
         else:
-            print("已取消执行。"); return
+            print("已取消执行。")
+        return
 
     # 处理结果
     if result.get("status") == "success":
