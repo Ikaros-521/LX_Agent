@@ -38,131 +38,118 @@ def main():
     """
     主程序入口
     """
-    # 创建Agent
+    logger.info("主程序启动")
     agent = Agent(config)
     
     try:
-        # 初始化Agent
+        logger.info("初始化Agent...")
         if not agent.initialize():
-            logger.error("Failed to initialize Agent")
+            logger.error("Agent初始化失败")
             return 1
             
-        # 如果没有提供命令，进入交互模式
         if not args.command:
+            logger.info("进入交互模式")
             interactive_mode(agent)
         else:
-            # 执行命令
             command = " ".join(args.command)
+            logger.info(f"执行命令行参数命令: {command}")
             execute_command(agent, command)
             
+        logger.info("主程序正常结束")
         return 0
     except KeyboardInterrupt:
-        logger.info("Interrupted by user")
+        logger.info("用户中断程序")
         return 0
     except Exception as e:
-        logger.error(f"Error: {str(e)}")
+        logger.error(f"主程序异常: {str(e)}")
         return 1
     finally:
-        # 关闭Agent
+        logger.info("关闭Agent")
         agent.close()
 
+
 def interactive_mode(agent: Agent):
-    """
-    交互模式
-    
-    Args:
-        agent: Agent实例
-    """
-    print("LX_Agent 交互模式 (输入 'exit' 或 'quit' 退出)")
-    print("可用MCP服务:")
+    logger.info("进入交互模式")
+    print("LX_Agent 交互模式 (输入 'exit' 或 'quit' 退出)", flush=True)
+    print("可用MCP服务:", flush=True)
     
     available_mcps = agent.mcp_router.get_available_mcps()
+    logger.info(f"检测到可用MCP服务: {len(available_mcps)} 个")
     for name, mcp in available_mcps:
         capabilities = mcp.get_capabilities()
-        print(f"  - {name}: {', '.join(capabilities)}")
+        logger.debug(f"MCP: {name}, 能力: {capabilities}")
+        print(f"  - {name}: {', '.join(capabilities)}", flush=True)
     
-    # 获取上下文最大轮数
     context_config = agent.config.get_context_config()
     max_rounds = context_config.get("max_rounds", 5)
     history = []
     while True:
         try:
-            # 获取用户输入
             command = input("\n> ")
             command = command.strip()
-            
-            # 检查退出命令
+            logger.debug(f"用户输入: {command}")
             if command.lower() in ["exit", "quit"]:
+                logger.info("用户退出交互模式")
                 break
-                
-            # 空命令
             if not command:
                 continue
-                
-            # 执行命令
+            # logger.info(f"执行用户命令: {command}")
             execute_command(agent, command, history)
-            # 维护历史，保留最近 max_rounds 轮
             if len(history) >= max_rounds:
                 history.pop(0)
             history.append({"command": command})
         except KeyboardInterrupt:
-            print("\nInterrupted")
+            logger.info("交互模式被用户中断")
+            print("\nInterrupted", flush=True)
             break
         except Exception as e:
-            logger.error(f"Error: {str(e)}")
+            logger.error(f"交互模式异常: {str(e)}")
+
 
 def execute_command(agent: Agent, command: str, history=None):
-    """
-    执行命令
-    
-    Args:
-        agent: Agent实例
-        command: 要执行的命令
-        history: 对话历史
-    """
-    # 分析命令并执行，传递上下文历史
+    logger.info(f"开始执行命令: {command}")
     if history is None:
         history = []
+    logger.debug(f"传入历史: {history}")
     result = agent.execute_with_analysis(command, history=history)
+    logger.debug(f"命令执行结果: {result}")
 
-    # 处理需要二次确认的shell命令
     if result.get("status") == "need_confirm":
-        print(result["message"])
+        logger.info("检测到高危操作，等待用户确认")
+        print(result["message"], flush=True)
         for call in result.get("dangerous_calls", []):
-            print(f"  工具: {call['name']}，参数: {call['arguments']}")
+            print(f"  工具: {call['name']}，参数: {call['arguments']}", flush=True)
         confirm = input("请确认是否执行上述高危操作？(yes/确认/y)：").strip().lower()
         if confirm in ("确认", "yes", "y"):
-            # 批量执行所有工具调用
+            logger.info("用户确认执行高危操作")
             results = []
             for call in result.get("all_calls", []):
+                logger.debug(f"执行工具调用: {call['name']}，参数: {call['arguments']}")
                 res = agent.mcp_router.execute_tool_call(call["name"], call["arguments"])
                 results.append({"tool": call["name"], "result": res})
-            # 输出结果
             for r in results:
-                print(f"[{r['tool']}] 执行结果: {r['result']}")
-            print("已执行。")
+                print(f"[{r['tool']}] 执行结果: {r['result']}", flush=True)
+            print("已执行。", flush=True)
         else:
-            print("已取消执行。")
+            logger.info("用户取消高危操作")
+            print("已取消执行。", flush=True)
         return
 
-    # 处理结果
     if result.get("status") == "success":
-        # 输出结果
+        logger.info("命令执行成功，输出结果")
         if "stdout" in result:
-            print(result["stdout"])
+            print(result["stdout"], flush=True)
         if "stderr" in result and result["stderr"]:
-            print(f"错误: {result['stderr']}")
-        
-        # 如果使用了备选MCP，输出提示
+            print(f"错误: {result['stderr']}", flush=True)
         if result.get("fallback"):
-            print(f"注意: 使用备选MCP服务 {result.get('mcp_name')} 执行命令")
-        
-        # 使用LLM总结结果
+            logger.info(f"使用备选MCP服务 {result.get('mcp_name')} 执行命令")
+            print(f"注意: 使用备选MCP服务 {result.get('mcp_name')} 执行命令", flush=True)
         summary = agent.summarize_result(command, result)
-        print(f"\n总结: {summary}")
+        logger.info(f"LLM总结: {summary}")
+        print(f"\n总结: {summary}", flush=True)
     else:
-        # 输出错误信息
-        print(f"执行失败: {result.get('error', '')}，{result.get('stderr', '')}")
+        logger.error(f"命令执行失败: {result.get('error', '')}，{result.get('stderr', '')}")
+        print(f"执行失败: {result.get('error', '')}，{result.get('stderr', '')}", flush=True)
 
 if __name__ == "__main__":
     # 解析命令行参数
