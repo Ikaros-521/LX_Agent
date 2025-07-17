@@ -33,7 +33,7 @@ mcp:
       enabled: true
       priority: 10
       # 支持的能力
-      capabilities: ["list_directory", "read_file", "start_process", "execute_shell", "mouse_click", "move_mouse", "key_press"]
+      capabilities: ["list_directory", "read_file", "start_process", "execute_shell", "mouse_click", "move_mouse", "key_press", "sleep"]
     # 云端MCP
     cloud:
       type: "cloud"

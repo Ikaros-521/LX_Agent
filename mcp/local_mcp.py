@@ -4,6 +4,8 @@ import subprocess
 import platform
 import os
 from typing import Dict, Any, List, Optional
+import asyncio
+from tools.sleep_tool import sleep_tool
 
 from mcp.base import BaseMCP
 
@@ -205,6 +207,22 @@ class LocalMCPAdapter(BaseMCP):
                     "required": ["key"]
                 }
             })
+        if "sleep" in self.capabilities:
+            tools.append({
+                "name": "sleep",
+                "description": "异步睡眠指定时间（ms或s）",
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "ms": {"type": "integer", "description": "毫秒，可选"},
+                        "s": {"type": "number", "description": "秒，可选"}
+                    },
+                    "anyOf": [
+                        {"required": ["ms"]},
+                        {"required": ["s"]}
+                    ]
+                }
+            })
         return {"tools": tools}
     
     def tools_call(self, name: str, arguments: Dict[str, Any]) -> Dict[str, Any]:
@@ -268,6 +286,16 @@ class LocalMCPAdapter(BaseMCP):
                 }
                 key_code = key_map.get(key.upper(), ord(key.upper()) if len(key) == 1 else 0)
                 return mk_tool.key_press(key_code)
+            elif name == "sleep":
+                # 兼容同步和异步调用
+                ms = arguments.get("ms")
+                s = arguments.get("s")
+                coro = sleep_tool(ms=ms, s=s)
+                if asyncio.iscoroutine(coro):
+                    loop = asyncio.get_event_loop()
+                    return loop.run_until_complete(coro)
+                else:
+                    return coro
             else:
                 return {"status": "error", "error": f"Unknown tool: {name}"}
         except Exception as e:
