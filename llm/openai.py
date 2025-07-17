@@ -71,6 +71,35 @@ class OpenAILLM(BaseLLM):
             logger.error(f"Error generating text with OpenAI: {str(e)} | prompt={prompt} | params={kwargs}", exc_info=True)
             return f"Error: {str(e)}"
 
+    def generate_stream(self, prompt: str, **kwargs):
+        """
+        流式生成文本响应
+        Yields:
+            str: 生成的文本片段
+        """
+        params = {**self.default_params, **kwargs}
+        try:
+            response = self.client.chat.completions.create(
+                model=self.model,
+                messages=[
+                    {"role": "system", "content": "You are a helpful assistant."},
+                    {"role": "user", "content": prompt}
+                ],
+                temperature=params["temperature"],
+                max_tokens=params["max_tokens"],
+                top_p=params["top_p"],
+                frequency_penalty=params["frequency_penalty"],
+                presence_penalty=params["presence_penalty"],
+                stream=True
+            )
+            for chunk in response:
+                delta = getattr(chunk.choices[0].delta, 'content', None)
+                if delta:
+                    yield delta
+        except Exception as e:
+            logger.error(f"Error in OpenAI stream: {str(e)}")
+            yield f"[OpenAI流式错误]: {str(e)}"
+
     def get_embeddings(self, text: Union[str, List[str]], **kwargs) -> Union[List[float], List[List[float]]]:
         """
         获取文本的向量嵌入表示

@@ -223,6 +223,39 @@ class LocalMCPAdapter(BaseMCP):
                     ]
                 }
             })
+        if "ocr" in self.capabilities:
+            tools.append({
+                "name": "ocr",
+                "description": "OCR识别图片中的文字（支持多后端和多语言，lang如'chi_sim'、'eng'、'chi_sim+eng'）。detailed=True时返回每个文本的坐标、置信度等结构化信息，detailed=False时仅返回纯文本。",
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "image_path": {"type": "string", "description": "图片文件路径"},
+                        "backend": {"type": "string", "description": "OCR后端，可选：tesseract、easyocr", "default": "tesseract"},
+                        "lang": {"type": "string", "description": "OCR语言，如'chi_sim'、'eng'、'chi_sim+eng'，可选"},
+                        "detailed": {"type": "boolean", "description": "是否返回详细结构化数据和坐标，True时返回每个文本的坐标、置信度等信息，False时仅返回纯文本", "default": False}
+                    },
+                    "required": ["image_path"]
+                }
+            })
+        if "screenshot" in self.capabilities:
+            tools.append({
+                "name": "screenshot",
+                "description": "截图工具，支持全屏、区域、窗口截图",
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "output_path": {"type": "string", "description": "保存图片的路径"},
+                        "mode": {"type": "string", "enum": ["screen", "region", "window"], "description": "截图模式"},
+                        "x": {"type": "integer", "description": "区域截图起点X坐标，可选"},
+                        "y": {"type": "integer", "description": "区域截图起点Y坐标，可选"},
+                        "width": {"type": "integer", "description": "区域截图宽度，可选"},
+                        "height": {"type": "integer", "description": "区域截图高度，可选"},
+                        "window_title": {"type": "string", "description": "窗口标题，仅窗口截图时需要"}
+                    },
+                    "required": ["output_path", "mode"]
+                }
+            })
         return {"tools": tools}
     
     def tools_call(self, name: str, arguments: Dict[str, Any]) -> Dict[str, Any]:
@@ -296,6 +329,48 @@ class LocalMCPAdapter(BaseMCP):
                     return loop.run_until_complete(coro)
                 else:
                     return coro
+            elif name == "ocr":
+                from tools.ocr_tool import OCRFactory
+                image_path = arguments.get("image_path")
+                backend = arguments.get("backend", "tesseract")
+                lang = arguments.get("lang")
+                detailed = arguments.get("detailed", False)
+                if not image_path:
+                    return {"status": "error", "error": "缺少图片路径"}
+                try:
+                    ocr = OCRFactory.create(backend, lang=lang)
+                    result = ocr.recognize(image_path, lang=lang, detailed=detailed)
+                    if detailed:
+                        return {"status": "success", "result": result}
+                    else:
+                        return {"status": "success", "text": result}
+                except Exception as e:
+                    return {"status": "error", "error": str(e)}
+            elif name == "screenshot":
+                from tools.screenshot_tool import ScreenshotTool
+                mode = arguments.get("mode")
+                output_path = arguments.get("output_path")
+                try:
+                    if mode == "screen":
+                        path = ScreenshotTool.capture_screen(output_path)
+                    elif mode == "region":
+                        x = arguments.get("x")
+                        y = arguments.get("y")
+                        width = arguments.get("width")
+                        height = arguments.get("height")
+                        if None in (x, y, width, height):
+                            return {"status": "error", "error": "区域截图需提供x, y, width, height"}
+                        path = ScreenshotTool.capture_region(x, y, width, height, output_path)
+                    elif mode == "window":
+                        window_title = arguments.get("window_title")
+                        if not window_title:
+                            return {"status": "error", "error": "窗口截图需提供window_title"}
+                        path = ScreenshotTool.capture_window(window_title, output_path)
+                    else:
+                        return {"status": "error", "error": f"未知截图模式: {mode}"}
+                    return {"status": "success", "image_path": path}
+                except Exception as e:
+                    return {"status": "error", "error": str(e)}
             else:
                 return {"status": "error", "error": f"Unknown tool: {name}"}
         except Exception as e:

@@ -80,6 +80,20 @@ class AnthropicLLM(BaseLLM):
             logger.error(f"Error generating text with Anthropic: {str(e)}")
             return f"Error: {str(e)}"
     
+    def generate_stream(self, prompt: str, **kwargs):
+        """
+        流式生成文本响应
+        Yields:
+            str: 生成的文本片段
+        """
+        # Anthropic 官方API如支持流式可在此实现，否则一次性返回
+        try:
+            # 目前requests不支持流式，兜底实现
+            yield self.generate(prompt, **kwargs)
+        except Exception as e:
+            logger.error(f"Error in Anthropic stream: {str(e)}")
+            yield f"[Anthropic流式错误]: {str(e)}"
+    
     def get_embeddings(self, text: Union[str, List[str]], **kwargs) -> Union[List[float], List[List[float]]]:
         """
         获取文本的向量嵌入表示

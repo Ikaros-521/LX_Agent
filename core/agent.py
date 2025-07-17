@@ -134,7 +134,7 @@ class Agent:
         # 让LLM生成工具调用，传递操作系统类型和上下文
         if self.llm:
             logger.info(f"LLM分析命令: {command}")
-            tool_calls = self.llm.analyze_and_generate_tool_calls(command, all_tools, os_type=os_type, history=history)
+            tool_calls = self.llm.analyze_and_generate_tool_calls(command, all_tools, os_type=os_type, history=history, stream=True)
         else:
             tool_calls = []
         logger.info(f"LLM生成的工具调用: {tool_calls}")

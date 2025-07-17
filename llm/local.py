@@ -115,6 +115,45 @@ class LocalLLM(BaseLLM):
             logger.error(f"Error generating text with local model: {str(e)}")
             return f"Error: {str(e)}"
     
+    def generate_stream(self, prompt: str, **kwargs):
+        """
+        流式生成文本响应
+        Yields:
+            str: 生成的文本片段
+        """
+        if self.model is None or self.tokenizer is None:
+            yield "Error: Model not loaded"
+            return
+        try:
+            params = {**self.default_params, **kwargs}
+            import torch
+            inputs = self.tokenizer(prompt, return_tensors="pt")
+            inputs = inputs.to(self.model.device)
+            # transformers的generate支持streamer参数，若无则兜底
+            try:
+                from transformers import TextIteratorStreamer
+                streamer = TextIteratorStreamer(self.tokenizer, skip_prompt=True, skip_special_tokens=True)
+                gen_kwargs = dict(
+                    input_ids=inputs["input_ids"],
+                    max_new_tokens=params["max_tokens"],
+                    temperature=params["temperature"],
+                    top_p=params["top_p"],
+                    do_sample=True,
+                    streamer=streamer
+                )
+                import threading
+                thread = threading.Thread(target=self.model.generate, kwargs=gen_kwargs)
+                thread.start()
+                for text in streamer:
+                    yield text
+                thread.join()
+            except ImportError:
+                # 没有streamer时，直接yield完整内容
+                yield self.generate(prompt, **kwargs)
+        except Exception as e:
+            logger.error(f"Error in LocalLLM stream: {str(e)}")
+            yield f"[LocalLLM流式错误]: {str(e)}"
+    
     def get_embeddings(self, text: Union[str, List[str]], **kwargs) -> Union[List[float], List[List[float]]]:
         """
         获取文本的向量嵌入表示

@@ -5,6 +5,7 @@ from typing import Dict, List, Any, Optional, Union
 import json
 from loguru import logger
 import re
+import sys
 
 class BaseLLM(ABC):
     """
@@ -22,6 +23,15 @@ class BaseLLM(ABC):
             
         Returns:
             str: 生成的文本响应
+        """
+        pass
+    
+    @abstractmethod
+    def generate_stream(self, prompt: str, **kwargs):
+        """
+        流式生成文本响应
+        Yields:
+            str: 生成的文本片段
         """
         pass
     
@@ -66,11 +76,13 @@ class BaseLLM(ABC):
         """
         pass
 
-    def analyze_and_generate_tool_calls(self, command: str, available_tools: List[Dict[str, Any]], os_type: str = None, history: list = None) -> List[Dict[str, Any]]:
+    def analyze_and_generate_tool_calls(self, command: str, available_tools: List[Dict[str, Any]], os_type: str = None, history: list = None, stream: bool = False, on_delta=None) -> List[Dict[str, Any]]:
         """
         通用：分析用户命令并生成工具调用列表
         os_type: 操作系统类型（如 Windows、Linux、Darwin）
         history: 对话历史
+        stream: 是否流式响应
+        on_delta: 流式回调函数，每收到一段内容就调用一次
         """
         def parse_llm_json_response(response: str):
             # 1. 提取 markdown 代码块中的内容
@@ -102,7 +114,7 @@ class BaseLLM(ABC):
                 history_str = "\n\n对话历史：\n" + "\n".join([f"用户: {h.get('command', '')}" for h in history])
             prompt = (
                 f"{os_info}\n"
-                f"分析用户需求并生成工具调用。可用工具：{tools_info}\n"
+                f"分析用户需求并生成工具调用，如需存储数据，均存储到当前路径的tmp文件夹即可。可用工具：{tools_info}\n"
                 f"{history_str}"
                 f"\n用户需求：{command}\n\n"
                 "请生成JSON格式的工具调用列表，例如：\n"
@@ -111,8 +123,21 @@ class BaseLLM(ABC):
                 "  {\"name\": \"key_press\", \"arguments\": {\"key\": \"W\"}}\n"
                 "]\n\n工具调用："
             )
-            response = self.generate(prompt)
-            logger.info(f"LLM返回工具调用: {response}")
+            if stream:
+                if on_delta is None:
+                    def on_delta(delta):
+                        print(delta, end='', flush=True)
+                        sys.stdout.flush()
+                chunks = []
+                for delta in self.generate_stream(prompt):
+                    if on_delta:
+                        on_delta(delta)
+                    chunks.append(delta)
+                response = ''.join(chunks)
+            else:
+                response = self.generate(prompt)
+                logger.info(f"LLM返回工具调用: {response}")
+            print("")
             return parse_llm_json_response(response)
         except Exception as e:
             logger.error(f"Error generating tool calls: {str(e)}")
