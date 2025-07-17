@@ -117,12 +117,13 @@ class Agent:
             
         return capabilities
     
-    def execute_with_analysis(self, command: str) -> Dict[str, Any]:
+    def execute_with_analysis(self, command: str, history: list = None) -> Dict[str, Any]:
         """
         分析命令并执行
         
         Args:
             command: 要执行的命令
+            history: 对话历史
         Returns:
             Dict[str, Any]: 命令执行结果
         """
@@ -130,8 +131,11 @@ class Agent:
         all_tools = self.mcp_router.get_all_tools()
         
         os_type = platform.system()
-        # 让LLM生成工具调用，传递操作系统类型
-        tool_calls = self.llm.analyze_and_generate_tool_calls(command, all_tools, os_type=os_type)
+        # 让LLM生成工具调用，传递操作系统类型和上下文
+        if self.llm:
+            tool_calls = self.llm.analyze_and_generate_tool_calls(command, all_tools, os_type=os_type, history=history)
+        else:
+            tool_calls = []
         logger.info(f"LLM生成的工具调用: {tool_calls}")
         results = []
         for call in tool_calls:

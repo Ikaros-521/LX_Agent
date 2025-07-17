@@ -66,10 +66,11 @@ class BaseLLM(ABC):
         """
         pass
 
-    def analyze_and_generate_tool_calls(self, command: str, available_tools: List[Dict[str, Any]], os_type: str = None) -> List[Dict[str, Any]]:
+    def analyze_and_generate_tool_calls(self, command: str, available_tools: List[Dict[str, Any]], os_type: str = None, history: list = None) -> List[Dict[str, Any]]:
         """
         通用：分析用户命令并生成工具调用列表
         os_type: 操作系统类型（如 Windows、Linux、Darwin）
+        history: 对话历史
         """
         def parse_llm_json_response(response: str):
             # 1. 提取 markdown 代码块中的内容
@@ -96,9 +97,14 @@ class BaseLLM(ABC):
                     "inputSchema": tool.get("inputSchema", {})
                 })
             os_info = f"当前操作系统为：{os_type}。" if os_type else ""
+            history_str = ""
+            if history:
+                history_str = "\n\n对话历史：\n" + "\n".join([f"用户: {h.get('command', '')}" for h in history])
             prompt = (
                 f"{os_info}\n"
-                f"分析用户需求并生成工具调用。可用工具：{tools_info}\n\n用户需求：{command}\n\n"
+                f"分析用户需求并生成工具调用。可用工具：{tools_info}\n"
+                f"{history_str}"
+                f"\n用户需求：{command}\n\n"
                 "请生成JSON格式的工具调用列表，例如：\n"
                 "[\n"
                 "  {\"name\": \"mouse_click\", \"arguments\": {\"x\": 300, \"y\": 300, \"button\": \"left\"}},\n"

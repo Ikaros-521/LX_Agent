@@ -81,6 +81,10 @@ def interactive_mode(agent: Agent):
         capabilities = mcp.get_capabilities()
         print(f"  - {name}: {', '.join(capabilities)}")
     
+    # 获取上下文最大轮数
+    context_config = agent.config.get_context_config()
+    max_rounds = context_config.get("max_rounds", 5)
+    history = []
     while True:
         try:
             # 获取用户输入
@@ -96,23 +100,30 @@ def interactive_mode(agent: Agent):
                 continue
                 
             # 执行命令
-            execute_command(agent, command)
+            execute_command(agent, command, history)
+            # 维护历史，保留最近 max_rounds 轮
+            if len(history) >= max_rounds:
+                history.pop(0)
+            history.append({"command": command})
         except KeyboardInterrupt:
             print("\nInterrupted")
             break
         except Exception as e:
             logger.error(f"Error: {str(e)}")
 
-def execute_command(agent: Agent, command: str):
+def execute_command(agent: Agent, command: str, history=None):
     """
     执行命令
     
     Args:
         agent: Agent实例
         command: 要执行的命令
+        history: 对话历史
     """
-    # 分析命令并执行
-    result = agent.execute_with_analysis(command)
+    # 分析命令并执行，传递上下文历史
+    if history is None:
+        history = []
+    result = agent.execute_with_analysis(command, history=history)
 
     # 处理需要二次确认的shell命令
     if result.get("status") == "need_confirm":

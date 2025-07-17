@@ -34,6 +34,16 @@ class TestAgent(unittest.TestCase):
                         "capabilities": ["file", "process"]
                     }
                 }
+            },
+            "llm": {
+                "default": "openai",
+                "services": {
+                    "openai": {
+                        "type": "openai",
+                        "api_key": "dummy",
+                        "model": "gpt-3"
+                    }
+                }
             }
         }
         
@@ -113,17 +123,36 @@ class TestAgent(unittest.TestCase):
     
     def test_execute_with_analysis(self):
         """
-        测试分析并执行命令方法
+        测试分析并执行命令方法（新版多工具调用风格）
         """
-        # 初始化Agent
         self.agent.initialized = True
-        
-        # 模拟分析命令结果
-        with patch.object(self.agent, 'analyze_command', return_value=["file"]):
-            result = self.agent.execute_with_analysis("读取文件内容")
+
+        # mock LLM返回的工具调用
+        tool_calls = [
+            {"name": "list_directory", "arguments": {"path": "/tmp"}},
+            {"name": "read_file", "arguments": {"path": "/tmp/test.txt"}}
+        ]
+        with patch.object(self.agent, 'llm', create=True) as mock_llm:
+            mock_llm.analyze_and_generate_tool_calls.return_value = tool_calls
+            # mock mcp_router.execute_tool_call，side_effect 足够长
+            self.agent.mcp_router.execute_tool_call = MagicMock(side_effect=[
+                {"status": "success", "items": ["test.txt"]},
+                {"status": "success", "content": "hello"},
+                {"status": "success", "items": ["test.txt"]},
+                {"status": "success", "content": "hello"}
+            ])
+            # 测试无历史
+            result = self.agent.execute_with_analysis("读取/tmp目录并打开test.txt")
             self.assertEqual(result["status"], "success")
-            self.assertEqual(result["result"], "test result")
-            self.mock_router.execute_command.assert_called_with("读取文件内容", ["file"])
+            self.assertEqual(len(result["results"]), 2)
+            self.agent.mcp_router.execute_tool_call.assert_any_call("list_directory", {"path": "/tmp"})
+            self.agent.mcp_router.execute_tool_call.assert_any_call("read_file", {"path": "/tmp/test.txt"})
+
+            # 测试有历史
+            history = [{"command": "上一步命令"}]
+            result2 = self.agent.execute_with_analysis("读取/tmp目录并打开test.txt", history=history)
+            self.assertEqual(result2["status"], "success")
+            self.assertEqual(len(result2["results"]), 2)
     
     def test_close(self):
         """
