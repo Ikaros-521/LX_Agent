@@ -154,41 +154,6 @@ class CloudMCPAdapter(BaseMCP):
         """
         return self.capabilities
     
-    def get_capabilities_detail(self) -> Dict[str, Any]:
-        """
-        动态获取云端MCP的详细能力描述，优先从远程API获取，失败时fallback到本地。
-        """
-        try:
-            response = self.session.get(
-                f"{self.base_url}/capabilities",
-                headers=self.headers,
-                timeout=self.timeout
-            )
-            if response.status_code == 200:
-                return response.json()
-        except Exception as e:
-            # 可以记录日志
-            pass
-
-        
-        return {
-            "protocolVersion": "2025-06-18",
-            "capabilities": {
-                "tools": {
-                    "listChanged": True,
-                    "tools": []
-                },
-                "prompts": {
-                    "listChanged": False,
-                    "prompts": []
-                }
-            },
-            "serverInfo": {
-                "name": "cloud-mcp",
-                "version": "1.0.0"
-            }
-        }
-    
     def is_available(self) -> bool:
         """
         检查云端MCP是否可用
@@ -208,3 +173,42 @@ class CloudMCPAdapter(BaseMCP):
             return response.status_code == 200
         except Exception:
             return False
+
+    def tools_list(self) -> Dict[str, Any]:
+        """
+        获取云端MCP的工具列表
+        """
+        try:
+            response = self.session.get(
+                f"{self.base_url}/tools/list",
+                headers=self.headers,
+                timeout=self.timeout
+            )
+            if response.status_code == 200:
+                return response.json()
+            else:
+                return {"tools": [], "error": f"HTTP {response.status_code}"}
+        except Exception as e:
+            return {"tools": [], "error": str(e)}
+
+    def tools_call(self, name: str, arguments: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        调用云端MCP的工具
+        """
+        try:
+            data = {
+                "name": name,
+                "arguments": arguments
+            }
+            response = self.session.post(
+                f"{self.base_url}/tools/call",
+                headers=self.headers,
+                json=data,
+                timeout=self.timeout
+            )
+            if response.status_code == 200:
+                return response.json()
+            else:
+                return {"status": "error", "error": f"HTTP {response.status_code}", "message": response.text}
+        except Exception as e:
+            return {"status": "error", "error": str(e)}

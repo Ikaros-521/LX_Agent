@@ -38,19 +38,6 @@ def main():
     """
     主程序入口
     """
-    # 解析命令行参数
-    args = parse_args()
-    
-    # 加载配置
-    config = Config(args.config)
-    
-    
-    log_config = config.get_logger_config()
-    if args.verbose:
-        logger.add(log_config["file"], level="DEBUG")
-    else:
-        logger.add(log_config["file"], level="INFO")
-    
     # 创建Agent
     agent = Agent(config)
     
@@ -157,4 +144,18 @@ def execute_command(agent: Agent, command: str):
         print(f"执行失败: {result.get('error', '')}，{result.get('stderr', '')}")
 
 if __name__ == "__main__":
+    # 解析命令行参数
+    args = parse_args()
+    
+    # 加载配置
+    config = Config(args.config)
+    
+    log_config = config.get_logger_config()
+    log_file = log_config.get("file", "logs/agent.log")
+    log_level = "DEBUG" if args.verbose else log_config.get("level", "INFO")
+    rotation = log_config.get("max_size", 10485760)  # 支持文件轮转
+    backup_count = log_config.get("backup_count", 5)
+    log_format = log_config.get("format", "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - <level>{message}</level>")
+    logger.add(log_file, level=log_level, rotation=rotation, retention=backup_count, format=log_format)
+
     sys.exit(main())

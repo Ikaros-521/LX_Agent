@@ -2,6 +2,7 @@
 
 from loguru import logger
 from typing import Dict, Any, List, Optional
+import platform
 
 from config import Config
 from mcp.router import MCPRouter
@@ -89,7 +90,7 @@ class Agent:
         if self.llm:
             try:
                 # 获取所有MCP能力详情
-                capabilities_detail = self.mcp_router.get_all_capabilities_detail()
+                capabilities_detail = self.mcp_router.get_all_tools()
                 return self.llm.analyze_command(command, capabilities_detail)
             except Exception as e:
                 logger.error(f"Error analyzing command with LLM: {str(e)}")
@@ -122,42 +123,23 @@ class Agent:
         
         Args:
             command: 要执行的命令
-            
         Returns:
             Dict[str, Any]: 命令执行结果
         """
-        # 分析命令所需的能力
-        required_capabilities = self.analyze_command(command)
-        logger.info(f"需要的能力: {required_capabilities}")
-
-        # 如果需要shell能力，先用LLM将自然语言转为shell命令
-        if self.llm and "shell" in required_capabilities:
-            # 判断操作系统类型
-            import platform
-            os_type = platform.system()
-            if os_type == "Windows":
-                os_type_str = "Windows"
-            elif os_type == "Linux":
-                os_type_str = "Linux"
-            elif os_type == "Darwin":
-                os_type_str = "Mac"
-            else:
-                os_type_str = os_type
-            shell_cmd = self.llm.nl_to_shell_command(command, os_type=os_type_str)
-            # 检查是否需要二次确认
-            shell_confirm = self.config.config.get("security", {}).get("shell_confirm", True)
-            if shell_confirm:
-                return {
-                    "status": "need_confirm",
-                    "shell_cmd": shell_cmd,
-                    "original_command": command,
-                    "message": f"即将执行的Shell命令：{shell_cmd}\n请确认是否执行？（输入“确认”或“yes”或“y”执行，其他任意内容取消）"
-                }
-            else:
-                return self.execute(shell_cmd, required_capabilities)
-        else:
-            # 其它情况保持原有逻辑
-            return self.execute(command, required_capabilities)
+        # 获取所有可用工具
+        all_tools = self.mcp_router.get_all_tools()
+        
+        os_type = platform.system()
+        # 让LLM生成工具调用，传递操作系统类型
+        tool_calls = self.llm.analyze_and_generate_tool_calls(command, all_tools, os_type=os_type)
+        logger.info(f"LLM生成的工具调用: {tool_calls}")
+        results = []
+        for call in tool_calls:
+            name = call.get("name")
+            arguments = call.get("arguments", {})
+            result = self.mcp_router.execute_tool_call(name, arguments)
+            results.append({"tool": name, "result": result})
+        return {"status": "success", "results": results}
     
     def summarize_result(self, command: str, result: Dict[str, Any]) -> str:
         """

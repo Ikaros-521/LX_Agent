@@ -262,16 +262,40 @@ class MCPRouter:
         self.mcps.clear()
         self.initialized = False
 
-    def get_all_capabilities_detail(self) -> List[Dict[str, Any]]:
+    def get_all_tools(self) -> List[Dict[str, Any]]:
         """
-        聚合所有可用MCP的详细能力信息，供LLM动态生成提示词。
+        聚合所有可用MCP的工具列表，供LLM分析使用
         Returns:
-            List[Dict[str, Any]]: 每个MCP的能力详情
+            List[Dict[str, Any]]: 所有工具的列表
         """
-        details = []
+        all_tools = []
         for name, mcp in self.mcps.items():
             try:
-                details.append(mcp.get_capabilities_detail())
+                tools_response = mcp.tools_list()
+                tools = tools_response.get("tools", [])
+                for tool in tools:
+                    tool["mcp_name"] = name  # 标记工具来源
+                    all_tools.append(tool)
             except Exception as e:
-                logger.warning(f"MCP {name} get_capabilities_detail error: {e}")
-        return details
+                logger.warning(f"MCP {name} tools_list error: {e}")
+        return all_tools
+    
+    def execute_tool_call(self, tool_name: str, arguments: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        执行工具调用，自动路由到对应的MCP
+        Args:
+            tool_name: 工具名称
+            arguments: 工具参数
+        Returns:
+            Dict[str, Any]: 执行结果
+        """
+        for name, mcp in self.mcps.items():
+            try:
+                tools_response = mcp.tools_list()
+                tools = tools_response.get("tools", [])
+                tool_names = [tool["name"] for tool in tools]
+                if tool_name in tool_names:
+                    return mcp.tools_call(tool_name, arguments)
+            except Exception as e:
+                logger.warning(f"MCP {name} tools_call error: {e}")
+        return {"status": "error", "error": f"Tool {tool_name} not found"}

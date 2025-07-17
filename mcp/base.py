@@ -60,20 +60,32 @@ class BaseMCP(ABC):
         pass
         
     @abstractmethod
-    def get_capabilities_detail(self) -> Dict[str, Any]:
-        """
-        返回该MCP支持的详细能力描述（如工具、prompts等），用于LLM动态提示词生成。
-        Returns:
-            Dict[str, Any]: 能力详情，结构参考标准MCP协议
-        """
-        pass
-        
-    @abstractmethod
     def is_available(self) -> bool:
         """
         检查MCP是否可用
         
         Returns:
             bool: MCP是否可用
+        """
+        pass
+
+    @abstractmethod
+    def tools_list(self) -> Dict[str, Any]:
+        """
+        返回该MCP支持的工具列表，符合MCP协议标准
+        Returns:
+            Dict[str, Any]: 工具列表，包含工具名称、描述、输入schema等
+        """
+        pass
+        
+    @abstractmethod
+    def tools_call(self, name: str, arguments: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        执行工具调用，符合MCP协议标准
+        Args:
+            name: 工具名称
+            arguments: 工具参数
+        Returns:
+            Dict[str, Any]: 工具执行结果
         """
         pass

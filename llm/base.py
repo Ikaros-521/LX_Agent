@@ -2,6 +2,9 @@
 
 from abc import ABC, abstractmethod
 from typing import Dict, List, Any, Optional, Union
+import json
+from loguru import logger
+import re
 
 class BaseLLM(ABC):
     """
@@ -62,3 +65,49 @@ class BaseLLM(ABC):
             str: 总结文本
         """
         pass
+
+    def analyze_and_generate_tool_calls(self, command: str, available_tools: List[Dict[str, Any]], os_type: str = None) -> List[Dict[str, Any]]:
+        """
+        通用：分析用户命令并生成工具调用列表
+        os_type: 操作系统类型（如 Windows、Linux、Darwin）
+        """
+        def parse_llm_json_response(response: str):
+            # 1. 提取 markdown 代码块中的内容
+            match = re.search(r"```(?:json)?\s*([\s\S]+?)\s*```", response)
+            if match:
+                response = match.group(1)
+            # 2. 去除前后空白
+            response = response.strip()
+            # 3. 尝试解析
+            try:
+                return json.loads(response)
+            except json.JSONDecodeError:
+                try:
+                    import ast
+                    return ast.literal_eval(response)
+                except Exception:
+                    return []
+        try:
+            tools_info = []
+            for tool in available_tools:
+                tools_info.append({
+                    "name": tool["name"],
+                    "description": tool["description"],
+                    "inputSchema": tool.get("inputSchema", {})
+                })
+            os_info = f"当前操作系统为：{os_type}。" if os_type else ""
+            prompt = (
+                f"{os_info}\n"
+                f"分析用户需求并生成工具调用。可用工具：{tools_info}\n\n用户需求：{command}\n\n"
+                "请生成JSON格式的工具调用列表，例如：\n"
+                "[\n"
+                "  {\"name\": \"mouse_click\", \"arguments\": {\"x\": 300, \"y\": 300, \"button\": \"left\"}},\n"
+                "  {\"name\": \"key_press\", \"arguments\": {\"key\": \"W\"}}\n"
+                "]\n\n工具调用："
+            )
+            response = self.generate(prompt)
+            logger.info(f"LLM返回工具调用: {response}")
+            return parse_llm_json_response(response)
+        except Exception as e:
+            logger.error(f"Error generating tool calls: {str(e)}")
+            return []
