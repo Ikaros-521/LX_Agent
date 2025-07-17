@@ -48,7 +48,7 @@ def main():
             return 1
             
         if not args.command:
-            logger.info("进入交互模式")
+            # logger.info("进入交互模式")
             interactive_mode(agent)
         else:
             command = " ".join(args.command)
@@ -93,8 +93,8 @@ def interactive_mode(agent: Agent):
                 break
             if not command:
                 continue
-            # logger.info(f"执行用户命令: {command}")
-            execute_command(agent, command, history)
+            # 新版：多轮人机协同主循环
+            agent.execute_interactive(command, history)
             if len(history) >= max_rounds:
                 history.pop(0)
             history.append({"command": command})
@@ -111,45 +111,8 @@ def execute_command(agent: Agent, command: str, history=None):
     if history is None:
         history = []
     logger.debug(f"传入历史: {history}")
-    result = agent.execute_with_analysis(command, history=history)
-    logger.debug(f"命令执行结果: {result}")
-
-    if result.get("status") == "need_confirm":
-        logger.info("检测到高危操作，等待用户确认")
-        print(result["message"], flush=True)
-        for call in result.get("dangerous_calls", []):
-            print(f"  工具: {call['name']}，参数: {call['arguments']}", flush=True)
-        confirm = input("请确认是否执行上述高危操作？(yes/确认/y)：").strip().lower()
-        if confirm in ("确认", "yes", "y"):
-            logger.info("用户确认执行高危操作")
-            results = []
-            for call in result.get("all_calls", []):
-                logger.debug(f"执行工具调用: {call['name']}，参数: {call['arguments']}")
-                res = agent.mcp_router.execute_tool_call(call["name"], call["arguments"])
-                results.append({"tool": call["name"], "result": res})
-            for r in results:
-                print(f"[{r['tool']}] 执行结果: {r['result']}", flush=True)
-            print("已执行。", flush=True)
-        else:
-            logger.info("用户取消高危操作")
-            print("已取消执行。", flush=True)
-        return
-
-    if result.get("status") == "success":
-        logger.info("命令执行成功，输出结果")
-        if "stdout" in result:
-            print(result["stdout"], flush=True)
-        if "stderr" in result and result["stderr"]:
-            print(f"错误: {result['stderr']}", flush=True)
-        if result.get("fallback"):
-            logger.info(f"使用备选MCP服务 {result.get('mcp_name')} 执行命令")
-            print(f"注意: 使用备选MCP服务 {result.get('mcp_name')} 执行命令", flush=True)
-        summary = agent.summarize_result(command, result)
-        logger.info(f"LLM总结: {summary}")
-        print(f"\n总结: {summary}", flush=True)
-    else:
-        logger.error(f"命令执行失败: {result.get('error', '')}，{result.get('stderr', '')}")
-        print(f"执行失败: {result.get('error', '')}，{result.get('stderr', '')}", flush=True)
+    # 新版：多轮人机协同主循环
+    agent.execute_interactive(command, history)
 
 if __name__ == "__main__":
     # 解析命令行参数

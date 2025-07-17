@@ -62,19 +62,70 @@ class BaseLLM(ABC):
         """
         pass
     
-    @abstractmethod
-    def summarize_result(self, command: str, result: Dict[str, Any]) -> str:
+    def intermediate_summary(self, command: str, history: list, stream: bool = False, on_delta=None) -> str:
         """
-        总结命令执行结果
-        
-        Args:
-            command: 执行的命令
-            result: 命令执行结果
-            
-        Returns:
-            str: 总结文本
+        中间总结：描述当前进展、遇到的问题、下一步建议
+        支持流式响应
         """
-        pass
+        prompt = (
+            f"你是一个任务执行智能体，以下是用户需求：{command}\n"
+            f"到目前为止的执行历史：{history}\n"
+            "请用简洁明了的语言总结当前进展、遇到的问题，并给出下一步建议。"
+        )
+        try:
+            if stream:
+                if on_delta is None:
+                    def on_delta(delta):
+                        print(delta, end='', flush=True)
+                        sys.stdout.flush()
+                chunks = []
+                for delta in self.generate_stream(prompt):
+                    if on_delta:
+                        on_delta(delta)
+                    chunks.append(delta)
+                return ''.join(chunks)
+            else:
+                return self.generate(prompt)
+        except Exception as e:
+            logger.error(f"Error in intermediate_summary: {str(e)}")
+            return "[中间总结失败]"
+
+    def final_summary(self, command: str, history: list, stream: bool = False, on_delta=None) -> str:
+        """
+        最终总结：整体回顾、结果归纳、建议
+        支持流式响应
+        """
+        prompt = (
+            f"你是一个任务执行智能体，以下是用户需求：{command}\n"
+            f"完整执行历史：{history}\n"
+            "请用简洁明了的语言总结本次任务的整体过程、最终结果，并给出改进建议。"
+        )
+        try:
+            if stream:
+                if on_delta is None:
+                    def on_delta(delta):
+                        print(delta, end='', flush=True)
+                        sys.stdout.flush()
+                chunks = []
+                for delta in self.generate_stream(prompt):
+                    if on_delta:
+                        on_delta(delta)
+                    chunks.append(delta)
+                return ''.join(chunks)
+            else:
+                return self.generate(prompt)
+        except Exception as e:
+            logger.error(f"Error in final_summary: {str(e)}")
+            return "[最终总结失败]"
+
+    def summarize_result(self, command: str, result: Dict[str, Any], stream: bool = False, on_delta=None) -> str:
+        """
+        总结命令执行结果（最终总结，兼容旧接口）
+        支持流式响应
+        """
+        # 兼容历史，result 里一般有 'results' 字段
+        history = result.get('results', result)
+        return self.final_summary(command, history, stream=stream, on_delta=on_delta)
 
     def analyze_and_generate_tool_calls(self, command: str, available_tools: List[Dict[str, Any]], os_type: str = None, history: list = None, stream: bool = False, on_delta=None) -> List[Dict[str, Any]]:
         """
@@ -114,14 +165,15 @@ class BaseLLM(ABC):
                 history_str = "\n\n对话历史：\n" + "\n".join([f"用户: {h.get('command', '')}" for h in history])
             prompt = (
                 f"{os_info}\n"
-                f"分析用户需求并生成工具调用，如需存储数据，均存储到当前路径的tmp文件夹即可。可用工具：{tools_info}\n"
+                f"分析用户需求并结合历史执行情况，生成当前情况下下一步需要调用的工具（只输出一个，或如果无需继续则返回空列表[]）。如需存储数据，均存储到当前路径的tmp文件夹即可。可用工具：{tools_info}\n"
                 f"{history_str}"
                 f"\n用户需求：{command}\n\n"
                 "请生成JSON格式的工具调用列表，例如：\n"
                 "[\n"
-                "  {\"name\": \"mouse_click\", \"arguments\": {\"x\": 300, \"y\": 300, \"button\": \"left\"}},\n"
-                "  {\"name\": \"key_press\", \"arguments\": {\"key\": \"W\"}}\n"
-                "]\n\n工具调用："
+                "  {\"name\": \"mouse_click\", \"arguments\": {\"x\": 300, \"y\": 300, \"button\": \"left\"}}\n"
+                "]\n"
+                "如果你认为所有需求都已完成，不要再生成工具调用，直接返回空列表 []。\n"
+                "\n工具调用："
             )
             if stream:
                 if on_delta is None:

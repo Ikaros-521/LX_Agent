@@ -161,27 +161,7 @@ class OpenAILLM(BaseLLM):
                 capabilities.append("keyboard")
             return capabilities
 
-    def summarize_result(self, command: str, result: Dict[str, Any]) -> str:
-        """
-        总结命令执行结果
-        
-        Args:
-            command: 执行的命令
-            result: 命令执行结果
-        Returns:
-            str: 总结文本
-        """
-        try:
-            prompt = f"""总结以下命令的执行结果：\n\n命令：{command}\n\n执行结果：{result}\n\n请用简洁明了的语言总结执行结果："""
-            response = self.generate(prompt)
-            return response
-        except Exception as e:
-            logger.error(f"Error summarizing result with OpenAI: {str(e)} | command={command} | result={result}", exc_info=True)
-            status = result.get("status", "unknown")
-            if status == "success":
-                return f"命令执行成功。{result.get('stdout', '')}"
-            else:
-                return f"命令执行失败。错误：{result.get('error', '未知错误')}"
+    
 
     def nl_to_shell_command(self, instruction: str, os_type: str = "Windows") -> str:
         """

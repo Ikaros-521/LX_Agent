@@ -193,3 +193,97 @@ class Agent:
         if self.initialized:
             self.mcp_router.close()
             self.initialized = False
+
+    def execute_interactive(self, command: str, history: list = None, max_steps: int = 10, auto_continue: bool = False) -> Dict[str, Any]:
+        """
+        智能体多轮自适应主循环：每步 LLM 总结，用户可介入决策，支持自动继续。每步都基于最新history重新分析下一步。
+        """
+        if history is None:
+            history = []
+        all_tools = self.mcp_router.get_all_tools()
+        os_type = platform.system()
+        step = 0
+        while step < max_steps:
+            # 1. LLM生成下一个工具调用建议（只取一个）
+            if self.llm:
+                tool_calls = self.llm.analyze_and_generate_tool_calls(
+                    command, all_tools, os_type=os_type, history=history, stream=True
+                )
+            else:
+                tool_calls = []
+            logger.warning(f"第{step+1}步 LLM生成的工具调用: {tool_calls}")
+            if not tool_calls:
+                logger.info("LLM未生成更多工具调用，终止。")
+                # 最终总结
+                final_summary = None
+                if self.llm:
+                    final_summary = self.llm.final_summary(
+                        command, history, stream=True, on_delta=lambda delta: print(delta, end='', flush=True)
+                    )
+                    logger.info(f"最终总结: {final_summary}")
+                    print(f"最终总结: {final_summary}", flush=True)
+                return {"status": "success", "results": history, "final_summary": final_summary}
+            call = tool_calls[0]  # 只取第一个建议
+            name = call.get("name")
+            arguments = call.get("arguments", {})
+            # 2. 高危操作检测
+            security_config = self.config.get_security_config()
+            dangerous_tools = security_config.get("dangerous_tools", ["execute_shell", "start_process"])
+            if name in dangerous_tools and security_config.get("shell_confirm", True):
+                print(f"检测到高危操作: {name}，参数: {arguments}，是否确认执行？(yes/确认/y)：", flush=True)
+                confirm = input().strip().lower()
+                if confirm not in ("确认", "yes", "y"):
+                    logger.info("用户取消高危操作")
+                    history.append({"command": call, "result": {"status": "cancelled"}})
+                    step += 1
+                    continue
+            # 3. 执行工具
+            result = self.mcp_router.execute_tool_call(name, arguments)
+            logger.info(f"[{name}] 执行结果: {result}")
+            print(f"[{name}] 执行结果: {result}", flush=True)
+            # 4. 记录到history
+            history.append({"command": call, "result": result})
+            # 5. LLM中间总结
+            summary = None
+            if self.llm:
+                summary = self.llm.intermediate_summary(
+                    command, history, stream=True, on_delta=lambda delta: print(delta, end='', flush=True)
+                )
+                logger.info(f"中间总结: {summary}")
+                print(f"中间总结: {summary}", flush=True)
+            # 6. 用户介入决策或自动继续
+            if not auto_continue:
+                print("请输入操作: [Enter继续/c终止/e编辑/r重新规划]：", end='', flush=True)
+                user_input = input().strip().lower()
+            else:
+                user_input = ''  # 自动继续
+            if user_input in ("c", "exit", "stop"):
+                print("用户选择终止流程。", flush=True)
+                # 最终总结
+                final_summary = None
+                if self.llm:
+                    final_summary = self.llm.final_summary(
+                        command, history, stream=True, on_delta=lambda delta: print(delta, end='', flush=True)
+                    )
+                    logger.info(f"最终总结: {final_summary}")
+                    print(f"最终总结: {final_summary}", flush=True)
+                return {"status": "stopped", "results": history, "final_summary": final_summary}
+            elif user_input in ("e", "edit"):
+                new_cmd = input("请输入新的指令：").strip()
+                command = new_cmd
+                print("已更新指令，重新规划。", flush=True)
+                # history 不清空，继续基于新指令和已有history
+            elif user_input in ("r", "replan"):
+                print("用户要求重新规划。", flush=True)
+                # history 不清空，继续基于已有history重新分析
+            # 其他情况默认继续
+            step += 1
+        # 保底最终总结
+        final_summary = None
+        if self.llm:
+            final_summary = self.llm.final_summary(
+                command, history, stream=True, on_delta=lambda delta: print(delta, end='', flush=True)
+            )
+            logger.info(f"最终总结: {final_summary}")
+            print(f"最终总结: {final_summary}", flush=True)
+        return {"status": "success", "results": history, "final_summary": final_summary}

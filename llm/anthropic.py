@@ -146,37 +146,4 @@ class AnthropicLLM(BaseLLM):
                 capabilities.append("keyboard")
             return capabilities
     
-    def summarize_result(self, command: str, result: Dict[str, Any]) -> str:
-        """
-        总结命令执行结果
-        
-        Args:
-            command: 执行的命令
-            result: 命令执行结果
-            
-        Returns:
-            str: 总结文本
-        """
-        try:
-            # 构建提示
-            prompt = f"""总结以下命令的执行结果：
-
-命令：{command}
-
-执行结果：{result}
-
-请用简洁明了的语言总结执行结果："""
-            
-            # 调用Anthropic API
-            response = self.generate(prompt)
-            
-            return response
-        except Exception as e:
-            logger.error(f"Error summarizing result with Anthropic: {str(e)}")
-            
-            # 简单实现，直接返回状态和结果
-            status = result.get("status", "unknown")
-            if status == "success":
-                return f"命令执行成功。{result.get('stdout', '')}"
-            else:
-                return f"命令执行失败。错误：{result.get('error', '未知错误')}"
+    
