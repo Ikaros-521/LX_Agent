@@ -154,6 +154,41 @@ class CloudMCPAdapter(BaseMCP):
         """
         return self.capabilities
     
+    def get_capabilities_detail(self) -> Dict[str, Any]:
+        """
+        动态获取云端MCP的详细能力描述，优先从远程API获取，失败时fallback到本地。
+        """
+        try:
+            response = self.session.get(
+                f"{self.base_url}/capabilities",
+                headers=self.headers,
+                timeout=self.timeout
+            )
+            if response.status_code == 200:
+                return response.json()
+        except Exception as e:
+            # 可以记录日志
+            pass
+
+        
+        return {
+            "protocolVersion": "2025-06-18",
+            "capabilities": {
+                "tools": {
+                    "listChanged": True,
+                    "tools": []
+                },
+                "prompts": {
+                    "listChanged": False,
+                    "prompts": []
+                }
+            },
+            "serverInfo": {
+                "name": "cloud-mcp",
+                "version": "1.0.0"
+            }
+        }
+    
     def is_available(self) -> bool:
         """
         检查云端MCP是否可用
