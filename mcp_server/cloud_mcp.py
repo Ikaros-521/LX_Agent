@@ -4,7 +4,7 @@ import requests
 import json
 from typing import Dict, Any, List, Optional
 
-from mcp.base import BaseMCP
+from mcp_server.base import BaseMCP
 
 class CloudMCPAdapter(BaseMCP):
     """
@@ -41,7 +41,6 @@ class CloudMCPAdapter(BaseMCP):
         """
         if not self.base_url:
             return False
-            
         try:
             # 尝试连接MCP服务
             response = self.session.get(
@@ -49,13 +48,17 @@ class CloudMCPAdapter(BaseMCP):
                 headers=self.headers,
                 timeout=self.timeout
             )
-            
             if response.status_code == 200:
                 self.connected = True
                 return True
             else:
+                print(f"[CloudMCPAdapter] 连接失败，HTTP状态码: {response.status_code}, 响应: {response.text}")
                 return False
-        except Exception:
+        except requests.Timeout:
+            print(f"[CloudMCPAdapter] 连接超时（timeout={self.timeout}s）: {self.base_url}")
+            return False
+        except Exception as e:
+            print(f"[CloudMCPAdapter] 连接异常: {e}")
             return False
     
     def disconnect(self) -> None:

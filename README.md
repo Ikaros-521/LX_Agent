@@ -1,4 +1,4 @@
-# LX_Agent - 多MCP支持的智能代理
+# 洛曦Agent - 多MCP支持的智能代理
 
 ## 项目简介
 
@@ -21,7 +21,6 @@ LX_Agent 是一个支持多个 MCP（Machine Control Protocol）服务同时接�
 LX_Agent/
 ├── config.py          # 配置管理模块
 ├── config.yaml        # 配置文件
-├── logger.py          # 日志模块
 ├── main.py            # 主程序入口
 ├── common/            # 通用层
 │   ├── __init__.py

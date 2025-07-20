@@ -4,10 +4,10 @@ from typing import Dict, Any, Optional
 import importlib
 from loguru import logger
 
-from mcp.base import BaseMCP
-from mcp.local_mcp import LocalMCPAdapter
-from mcp.cloud_mcp import CloudMCPAdapter
-
+from mcp_server.base import BaseMCP
+from mcp_server.local_mcp import LocalMCPAdapter
+from mcp_server.cloud_mcp import CloudMCPAdapter
+from mcp_server.async_cloud_mcp import AsyncCloudMCPAdapter
 
 
 class MCPFactory:
@@ -39,6 +39,8 @@ class MCPFactory:
                 return LocalMCPAdapter(config)
             elif mcp_type == "cloud":
                 return CloudMCPAdapter(config)
+            elif mcp_type == "async_cloud":
+                return AsyncCloudMCPAdapter(config)
             else:
                 # 尝试动态加载自定义MCP适配器
                 module_path = config.get("module", "")

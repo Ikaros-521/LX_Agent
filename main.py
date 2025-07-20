@@ -3,6 +3,7 @@
 import os
 import sys
 import argparse
+import asyncio
 
 from config import Config
 from loguru import logger
@@ -34,7 +35,7 @@ def parse_args():
     
     return parser.parse_args()
 
-def main():
+async def main():
     """
     主程序入口
     """
@@ -43,17 +44,17 @@ def main():
     
     try:
         logger.info("初始化Agent...")
-        if not agent.initialize():
+        if not await agent.initialize():
             logger.error("Agent初始化失败")
             return 1
             
         if not args.command:
             # logger.info("进入交互模式")
-            interactive_mode(agent)
+            await interactive_mode(agent)
         else:
             command = " ".join(args.command)
             logger.info(f"执行命令行参数命令: {command}")
-            execute_command(agent, command)
+            await execute_command(agent, command)
             
         logger.info("主程序正常结束")
         return 0
@@ -65,10 +66,10 @@ def main():
         return 1
     finally:
         logger.info("关闭Agent")
-        agent.close()
+        await agent.close()
 
 
-def interactive_mode(agent: Agent):
+async def interactive_mode(agent: Agent):
     logger.info("进入交互模式")
     print("LX_Agent 交互模式 (输入 'exit' 或 'quit' 退出)", flush=True)
     print("可用MCP服务:", flush=True)
@@ -94,7 +95,7 @@ def interactive_mode(agent: Agent):
             if not command:
                 continue
             # 新版：多轮人机协同主循环
-            agent.execute_interactive(command, history)
+            await agent.execute_interactive(command, history)
             if len(history) >= max_rounds:
                 history.pop(0)
             history.append({"command": command})
@@ -105,14 +106,13 @@ def interactive_mode(agent: Agent):
         except Exception as e:
             logger.error(f"交互模式异常: {str(e)}")
 
-
-def execute_command(agent: Agent, command: str, history=None):
+async def execute_command(agent: Agent, command: str, history=None):
     logger.info(f"开始执行命令: {command}")
     if history is None:
         history = []
     logger.debug(f"传入历史: {history}")
     # 新版：多轮人机协同主循环
-    agent.execute_interactive(command, history)
+    await agent.execute_interactive(command, history)
 
 if __name__ == "__main__":
     # 解析命令行参数
@@ -129,4 +129,4 @@ if __name__ == "__main__":
     log_format = log_config.get("format", "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - <level>{message}</level>")
     logger.add(log_file, level=log_level, rotation=rotation, retention=backup_count, format=log_format)
 
-    sys.exit(main())
+    sys.exit(asyncio.run(main()))

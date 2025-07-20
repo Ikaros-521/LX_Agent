@@ -3,9 +3,10 @@
 from loguru import logger
 from typing import Dict, Any, List, Optional, Tuple
 import random
+import inspect
 
-from mcp.base import BaseMCP
-from mcp.factory import MCPFactory
+from mcp_server.base import BaseMCP
+from mcp_server.factory import MCPFactory
 
 
 
@@ -26,7 +27,7 @@ class MCPRouter:
         self.routing_strategy = config.get("routing_strategy", "capability_match")
         self.initialized = False
     
-    def initialize(self) -> bool:
+    async def initialize(self) -> bool:
         """
         初始化所有MCP服务
         
@@ -54,14 +55,21 @@ class MCPRouter:
                 
             # 连接MCP服务
             try:
-                if mcp.connect():
+                connect_method = mcp.connect
+                if inspect.iscoroutinefunction(connect_method):
+                    await connect_method()
                     self.mcps[name] = mcp
                     logger.info(f"MCP service {name} connected successfully")
                 else:
-                    logger.error(f"Failed to connect to MCP service {name}")
+                    if connect_method():
+                        self.mcps[name] = mcp
+                        logger.info(f"MCP service {name} connected successfully")
+                    else:
+                        logger.error(f"Failed to connect to MCP service {name}")
             except Exception as e:
                 logger.error(f"Error connecting to MCP service {name}: {str(e)}")
         
+        # 设置初始化标志
         self.initialized = len(self.mcps) > 0
         return self.initialized
     
@@ -153,7 +161,7 @@ class MCPRouter:
         # 随机选择一个可用的MCP
         return random.choice(available_mcps)
     
-    def select_mcp(self, required_capabilities: List[str] = None) -> Optional[Tuple[str, BaseMCP]]:
+    async def select_mcp(self, required_capabilities: List[str] = None) -> Optional[Tuple[str, BaseMCP]]:
         """
         根据路由策略选择合适的MCP服务
         
@@ -164,7 +172,7 @@ class MCPRouter:
             Optional[Tuple[str, BaseMCP]]: 选中的MCP服务，如果没有合适的则返回None
         """
         if not self.initialized:
-            if not self.initialize():
+            if not await self.initialize():
                 return None
                 
         if not required_capabilities:
@@ -181,7 +189,7 @@ class MCPRouter:
             # 默认使用能力匹配策略
             return self.select_mcp_by_capability(required_capabilities)
     
-    def execute_command(self, command: str, required_capabilities: List[str] = None, **kwargs) -> Dict[str, Any]:
+    async def execute_command(self, command: str, required_capabilities: List[str] = None, **kwargs) -> Dict[str, Any]:
         """
         执行命令，自动选择合适的MCP服务
         
@@ -201,7 +209,7 @@ class MCPRouter:
             if confirm not in ("确认", "yes", "y"):
                 print("已取消执行。"); return {"status": "cancelled", "error": "用户取消了shell命令执行"}
         # 选择合适的MCP
-        selected = self.select_mcp(required_capabilities)
+        selected = await self.select_mcp(required_capabilities)
         if not selected:
             return {
                 "status": "error",
@@ -212,7 +220,7 @@ class MCPRouter:
         
         try:
             # 执行命令
-            result = mcp.execute_command(command, **kwargs)
+            result = await mcp.execute_command(command, **kwargs)
             result["mcp_name"] = name
             return result
         except Exception as e:
@@ -233,7 +241,7 @@ class MCPRouter:
             # 尝试使用其他MCP执行命令
             for other_name, other_mcp in other_mcps:
                 try:
-                    result = other_mcp.execute_command(command, **kwargs)
+                    result = await other_mcp.execute_command(command, **kwargs)
                     result["mcp_name"] = other_name
                     result["fallback"] = True
                     return result
@@ -280,7 +288,7 @@ class MCPRouter:
                 logger.warning(f"MCP {name} tools_list error: {e}")
         return all_tools
     
-    def execute_tool_call(self, tool_name: str, arguments: Dict[str, Any]) -> Dict[str, Any]:
+    async def execute_tool_call(self, tool_name: str, arguments: Dict[str, Any]) -> Dict[str, Any]:
         """
         执行工具调用，自动路由到对应的MCP
         Args:

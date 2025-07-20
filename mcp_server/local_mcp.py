@@ -7,7 +7,7 @@ from typing import Dict, Any, List, Optional
 import asyncio
 from tools.sleep_tool import sleep_tool
 
-from mcp.base import BaseMCP
+from mcp_server.base import BaseMCP
 
 class LocalMCPAdapter(BaseMCP):
     """

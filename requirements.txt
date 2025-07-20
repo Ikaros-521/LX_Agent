@@ -16,7 +16,4 @@ pytesseract>=0.3.13
 pillow>=10.4.0
 # easyocr>=1.5.0
 
-# 工具相关依赖（可选）
-# 如果需要浏览器控制功能，取消下面的注释
-# selenium>=4.8.0
-# webdriver-manager>=3.8.5
+mcp>=1.12.0

@@ -5,7 +5,7 @@ from typing import Dict, Any, List, Optional
 import platform
 
 from config import Config
-from mcp.router import MCPRouter
+from mcp_server.router import MCPRouter
 from llm.factory import LLMFactory
 from llm.base import BaseLLM
 
@@ -28,7 +28,7 @@ class Agent:
         self.llm = None
         self.initialized = False
     
-    def initialize(self) -> bool:
+    async def initialize(self) -> bool:
         """
         初始化Agent
         
@@ -39,7 +39,7 @@ class Agent:
             return True
             
         # 初始化MCP路由器
-        if not self.mcp_router.initialize():
+        if not await self.mcp_router.initialize():
             logger.error("Failed to initialize MCP router")
             return False
             
@@ -55,7 +55,7 @@ class Agent:
         self.initialized = True
         return True
     
-    def execute(self, command: str, required_capabilities: List[str] = None) -> Dict[str, Any]:
+    async def execute(self, command: str, required_capabilities: List[str] = None) -> Dict[str, Any]:
         """
         执行命令
         
@@ -67,16 +67,16 @@ class Agent:
             Dict[str, Any]: 命令执行结果
         """
         if not self.initialized:
-            if not self.initialize():
+            if not await self.initialize():
                 return {
                     "status": "error",
                     "error": "Agent not initialized"
                 }
         
         # 执行命令
-        return self.mcp_router.execute_command(command, required_capabilities)
+        return await self.mcp_router.execute_command(command, required_capabilities)
     
-    def analyze_command(self, command: str) -> List[str]:
+    async def analyze_command(self, command: str) -> List[str]:
         """
         分析命令所需的能力
         
@@ -117,7 +117,7 @@ class Agent:
             
         return capabilities
     
-    def execute_with_analysis(self, command: str, history: list = None) -> Dict[str, Any]:
+    async def execute_with_analysis(self, command: str, history: list = None) -> Dict[str, Any]:
         """
         分析命令并执行
         
@@ -156,11 +156,11 @@ class Agent:
         for call in tool_calls:
             name = call.get("name")
             arguments = call.get("arguments", {})
-            result = self.mcp_router.execute_tool_call(name, arguments)
+            result = await self.mcp_router.execute_tool_call(name, arguments)
             results.append({"tool": name, "result": result})
         return {"status": "success", "results": results}
     
-    def summarize_result(self, command: str, result: Dict[str, Any]) -> str:
+    async def summarize_result(self, command: str, result: Dict[str, Any]) -> str:
         """
         总结命令执行结果
         
@@ -186,15 +186,15 @@ class Agent:
         else:
             return f"命令执行失败。错误：{result.get('error', '未知错误')}"
     
-    def close(self) -> None:
+    async def close(self) -> None:
         """
         关闭Agent
         """
         if self.initialized:
-            self.mcp_router.close()
+            await self.mcp_router.close()
             self.initialized = False
 
-    def execute_interactive(self, command: str, history: list = None, max_steps: int = 10, auto_continue: bool = False) -> Dict[str, Any]:
+    async def execute_interactive(self, command: str, history: list = None, max_steps: int = 10, auto_continue: bool = False) -> Dict[str, Any]:
         """
         智能体多轮自适应主循环：每步 LLM 总结，用户可介入决策，支持自动继续。每步都基于最新history重新分析下一步。
         """
@@ -238,7 +238,7 @@ class Agent:
                     step += 1
                     continue
             # 3. 执行工具
-            result = self.mcp_router.execute_tool_call(name, arguments)
+            result = await self.mcp_router.execute_tool_call(name, arguments)
             logger.info(f"[{name}] 执行结果: {result}")
             print(f"[{name}] 执行结果: {result}", flush=True)
             # 4. 记录到history

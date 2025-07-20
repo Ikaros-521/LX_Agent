@@ -43,6 +43,21 @@ mcp:
       api_key: "YOUR_CLOUD_MCP_API_KEY"
       timeout: 30
       capabilities: ["file", "browser", "mouse", "keyboard", "process", "shell"]
+    # 异步云MCP（支持多个实例，示例）
+    mcp-playwright:
+      type: "async_cloud"
+      enabled: true
+      priority: 3
+      url: "https://server.smithery.ai/@adalovu/mcp-playwright/mcp?api_key=dbbcc55b-a29c-4865-a21f-4ea0872c6419&profile=stale-constrictor-mc9Nzo"
+      api_key: "YOUR_ASYNC_CLOUD_MCP_API_KEY_1"
+      timeout: 30
+    async_cloud_2:
+      type: "async_cloud"
+      enabled: false
+      priority: 2
+      url: "https://example.com/mcp/async_api2"
+      api_key: "YOUR_ASYNC_CLOUD_MCP_API_KEY_2"
+      timeout: 30
     # 自定义MCP示例
     custom:
       type: "custom"
