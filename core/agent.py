@@ -134,7 +134,7 @@ class Agent:
         # 让LLM生成工具调用，传递操作系统类型和上下文
         if self.llm:
             logger.info(f"LLM分析命令: {command}")
-            tool_calls = self.llm.analyze_and_generate_tool_calls(command, all_tools, os_type=os_type, history=history, stream=True)
+            tool_calls = await self.llm.analyze_and_generate_tool_calls(command, all_tools, os_type=os_type, history=history, stream=True)
         else:
             tool_calls = []
         logger.info(f"LLM生成的工具调用: {tool_calls}")
@@ -198,6 +198,17 @@ class Agent:
         """
         智能体多轮自适应主循环：每步 LLM 总结，用户可介入决策，支持自动继续。每步都基于最新history重新分析下一步。
         """
+        
+        def ask_clear_history(history):
+            """
+            询问用户是否清空历史，若确认则清空。
+            """
+            print("是否清空历史，开启新任务？(y/n)：", end='', flush=True)
+            clear_input = input().strip().lower()
+            if clear_input in ("y", "yes"):
+                history.clear()
+                print("历史已清空。", flush=True)
+                
         if history is None:
             history = []
         all_tools = await self.mcp_router.get_all_tools()
@@ -206,7 +217,7 @@ class Agent:
         while step < max_steps:
             # 1. LLM生成下一个工具调用建议（只取一个）
             if self.llm:
-                tool_calls = self.llm.analyze_and_generate_tool_calls(
+                tool_calls = await self.llm.analyze_and_generate_tool_calls(
                     command, all_tools, os_type=os_type, history=history, stream=True
                 )
             else:
@@ -217,12 +228,12 @@ class Agent:
                 # 最终总结
                 final_summary = None
                 if self.llm:
-                    print("开始最终总结...", flush=True)
+                    logger.info("开始最终总结...")
                     final_summary = self.llm.final_summary(
                         command, history, stream=True, on_delta=lambda delta: print(delta, end='', flush=True)
                     )
                     logger.info(f"最终总结: {final_summary}")
-                    print(f"最终总结: {final_summary}", flush=True)
+                    ask_clear_history(history)
                 return {"status": "success", "results": history, "final_summary": final_summary}
             call = tool_calls[0]  # 只取第一个建议
             name = call.get("name")
@@ -241,53 +252,63 @@ class Agent:
             # 3. 执行工具
             result = await self.mcp_router.execute_tool_call(name, arguments)
             logger.info(f"[{name}] 执行结果: {result}")
-            print(f"[{name}] 执行结果: {result}", flush=True)
             # 4. 记录到history
             history.append({"command": call, "result": result})
             # 5. LLM中间总结
             summary = None
             if self.llm:
-                print("开始中间总结...", flush=True)
+                logger.info("开始中间总结...")
                 summary = self.llm.intermediate_summary(
                     command, history, stream=True, on_delta=lambda delta: print(delta, end='', flush=True)
                 )
                 logger.info(f"中间总结: {summary}")
-                print(f"中间总结: {summary}", flush=True)
+                # 写入history最新一项
+                history[-1]["summary"] = summary
+
             # 6. 用户介入决策或自动继续
             if not auto_continue:
-                print("请输入操作: [Enter继续/c终止/e编辑/r重新规划]：", end='', flush=True)
-                user_input = input().strip().lower()
+                while True:
+                    print("请输入操作: [Enter继续/c终止/e编辑/r重新规划/clear清空历史]：", end='', flush=True)
+                    user_input = input().strip().lower()
+                    if user_input in ("clear", "reset"):
+                        history.clear()
+                        logger.info("历史已清空，开启新任务。")
+                        continue  # 仅clear时循环
+                    break  # 其他操作均退出小循环
             else:
                 user_input = ''  # 自动继续
+
             if user_input in ("c", "exit", "stop"):
-                print("用户选择终止流程。", flush=True)
+                logger.info("用户选择终止流程。")
                 # 最终总结
                 final_summary = None
                 if self.llm:
-                    print("开始最终总结...", flush=True)
+                    logger.info("开始最终总结...")
                     final_summary = self.llm.final_summary(
                         command, history, stream=True, on_delta=lambda delta: print(delta, end='', flush=True)
                     )
                     logger.info(f"最终总结: {final_summary}")
-                    print(f"最终总结: {final_summary}", flush=True)
+                ask_clear_history(history)
                 return {"status": "stopped", "results": history, "final_summary": final_summary}
             elif user_input in ("e", "edit"):
                 new_cmd = input("请输入新的指令：").strip()
                 command = new_cmd
-                print("已更新指令，重新规划。", flush=True)
+                logger.info("已更新指令，重新规划。")
                 # history 不清空，继续基于新指令和已有history
             elif user_input in ("r", "replan"):
-                print("用户要求重新规划。", flush=True)
+                logger.info("用户要求重新规划。")
                 # history 不清空，继续基于已有history重新分析
+
+                
             # 其他情况默认继续
             step += 1
         # 保底最终总结
         final_summary = None
         if self.llm:
-            print("开始最终总结...", flush=True)
+            logger.info("开始最终总结...")
             final_summary = self.llm.final_summary(
                 command, history, stream=True, on_delta=lambda delta: print(delta, end='', flush=True)
             )
             logger.info(f"最终总结: {final_summary}")
-            print(f"最终总结: {final_summary}", flush=True)
+        ask_clear_history(history)
         return {"status": "success", "results": history, "final_summary": final_summary}

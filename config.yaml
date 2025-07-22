@@ -13,13 +13,13 @@ llm:
       api_key: "sk-ZrTz6C3ZGsv2jCICA28f458921D74a0c829d1eA4AcC9Af55"
       model: "Qwen/Qwen3-8B"
       temperature: 0.7
-      max_tokens: 4096
+      max_tokens: 8192
     # 本地大模型
     local:
       type: "local"
       model_path: "path/to/local/model"
       temperature: 0.7
-      max_tokens: 4096
+      max_tokens: 8192
 
 # MCP配置
 mcp:

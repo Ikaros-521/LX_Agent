@@ -107,7 +107,7 @@ python main.py -v
 
 安装Nodejs环境  
 
-例如：`npx @playwright/mcp@latest --port 8931`  
+启动命令例如playwright服务：`npx @playwright/mcp@latest --port 8931`，启动后在yaml配置文件中添加配置即可，API地址为`http://localhost:8931/mcp`  
 
 ## 扩展开发
 

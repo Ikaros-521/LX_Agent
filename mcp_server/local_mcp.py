@@ -337,6 +337,9 @@ class LocalMCPAdapter(BaseMCP):
                 detailed = arguments.get("detailed", False)
                 if not image_path:
                     return {"status": "error", "error": "缺少图片路径"}
+                # 路径修正：相对路径转绝对路径
+                if not os.path.isabs(image_path):
+                    image_path = os.path.abspath(image_path)
                 try:
                     ocr = OCRFactory.create(backend, lang=lang)
                     result = ocr.recognize(image_path, lang=lang, detailed=detailed)

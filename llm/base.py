@@ -127,7 +127,7 @@ class BaseLLM(ABC):
         history = result.get('results', result)
         return self.final_summary(command, history, stream=stream, on_delta=on_delta)
 
-    def analyze_and_generate_tool_calls(self, command: str, available_tools: List[Dict[str, Any]], os_type: str = None, history: list = None, stream: bool = False, on_delta=None) -> List[Dict[str, Any]]:
+    async def analyze_and_generate_tool_calls(self, command: str, available_tools: List[Dict[str, Any]], os_type: str = None, history: list = None, stream: bool = False, on_delta=None) -> List[Dict[str, Any]]:
         """
         通用：分析用户命令并生成工具调用列表
         os_type: 操作系统类型（如 Windows、Linux、Darwin）
@@ -160,9 +160,23 @@ class BaseLLM(ABC):
                     "inputSchema": tool.get("inputSchema", {})
                 })
             os_info = f"当前操作系统为：{os_type}。" if os_type else ""
+            # 优化history结构化展开
             history_str = ""
             if history:
-                history_str = "\n\n对话历史：\n" + "\n".join([f"用户: {h.get('command', '')}" for h in history])
+                steps = []
+                for idx, h in enumerate(history):
+                    step_lines = [f"第{idx+1}步："]
+                    cmd = h.get('command', '')
+                    if cmd:
+                        step_lines.append(f"- LLM工具调用建议: {cmd}")
+                    result = h.get('result', '')
+                    if result:
+                        step_lines.append(f"- 执行结果: {result}")
+                    summary = h.get('summary', '')
+                    if summary:
+                        step_lines.append(f"- LLM中间总结: {summary}")
+                    steps.append("\n".join(step_lines))
+                history_str = "\n\n历史执行过程：\n" + "\n\n".join(steps)
             prompt = (
                 f"{os_info}\n"
                 f"分析用户需求并结合历史执行情况，生成当前情况下下一步需要调用的工具（只输出一个，或如果无需继续则返回空列表[]）。如需存储数据，均存储到当前路径的tmp文件夹即可。可用工具：{tools_info}\n"
@@ -173,6 +187,7 @@ class BaseLLM(ABC):
                 "  {\"name\": \"mouse_click\", \"arguments\": {\"x\": 300, \"y\": 300, \"button\": \"left\"}}\n"
                 "]\n"
                 "如果你认为所有需求都已完成，不要再生成工具调用，直接返回空列表 []。\n"
+                "\n请优先参考上一步LLM中间总结中的建议，避免重复错误。\n"
                 "\n工具调用："
             )
             if stream:
