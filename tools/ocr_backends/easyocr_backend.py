@@ -3,6 +3,7 @@ from tools.ocr_tool import BaseOCR
 LANG_MAP_TESSERACT_TO_EASYOCR = {
     'chi_sim': 'ch_sim',
     'chi_tra': 'ch_tra',
+    'zh_sim': 'ch_sim',
     'eng': 'en',
     'jpn': 'ja',
     'kor': 'ko',
