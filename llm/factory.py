@@ -34,13 +34,8 @@ class LLMFactory:
             
         try:
             if llm_type == "openai":
-                return OpenAILLM(
-                    base_url=config.get("base_url"),
-                    api_key=config.get("api_key"),
-                    model=config.get("model", "gpt-4"),
-                    temperature=config.get("temperature", 0.7),
-                    max_tokens=config.get("max_tokens", 4096)
-                )
+                # 直接传递整个 config 字典，而不是解包
+                return OpenAILLM(config)
             elif llm_type == "anthropic":
                 return AnthropicLLM(
                     api_key=config.get("api_key"),

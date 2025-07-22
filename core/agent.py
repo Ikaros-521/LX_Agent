@@ -214,6 +214,14 @@ class Agent:
         all_tools = await self.mcp_router.get_all_tools()
         os_type = platform.system()
         step = 0
+        
+        # --- BEGIN REPETITION TRACKING STATE ---
+        last_command_signature = None
+        consecutive_repetition_count = 0
+        REPETITION_SOFT_BLOCK_THRESHOLD = 2  # 连续第2次执行相同操作时，进行软拦截
+        REPETITION_HARD_STOP_THRESHOLD = 4   # 连续第4次执行相同操作时，强制终止
+        # --- END REPETITION TRACKING STATE ---
+        
         while step < max_steps:
             # 1. LLM生成下一个工具调用建议（只取一个）
             if self.llm:
@@ -238,6 +246,40 @@ class Agent:
             call = tool_calls[0]  # 只取第一个建议
             name = call.get("name")
             arguments = call.get("arguments", {})
+
+            # --- BEGIN GENERALIZED REPETITION GUARD ---
+            # 为命令及其参数创建唯一签名，用于比较
+            current_command_signature = f"{name}({sorted(arguments.items())})"
+
+            if last_command_signature and current_command_signature == last_command_signature:
+                consecutive_repetition_count += 1
+            else:
+                consecutive_repetition_count = 1  # 新命令，重置计数器
+
+            # 根据重复次数进行分级干预
+            if consecutive_repetition_count >= REPETITION_HARD_STOP_THRESHOLD:
+                logger.critical(f"检测到连续 {consecutive_repetition_count} 次重复执行同一命令，强制终止以防止死循环。")
+                history.append({
+                    "command": {"name": "system_error", "arguments": {"message": "检测到无限循环，强制终止。"}},
+                    "result": {"status": "error", "message": f"命令 '{name}' 已被连续重复执行 {consecutive_repetition_count} 次。"}
+                })
+                print("检测到潜在的无限循环，已强制终止。")
+                return {"status": "error", "results": history, "final_summary": "因重复操作强制终止"}
+
+            if consecutive_repetition_count >= REPETITION_SOFT_BLOCK_THRESHOLD:
+                logger.warning(f"检测到重复命令 '{name}'，将自动拒绝并要求重新规划。")
+                history.append({
+                    "command": {"name": "system_notice", "arguments": {"message": f"重复的指令 '{name}' 已被自动拒绝。"}},
+                    "result": {
+                        "status": "info",
+                        "message": "下一步应该采取不同的操作来推进任务，而不是重复之前的操作。"
+                    }
+                })
+                last_command_signature = None  # 中断重复链，以便LLM可以重新尝试相同的命令（如果它在不同步骤后仍然认为有必要）
+                step += 1
+                continue
+            # --- END GENERALIZED REPETITION GUARD ---
+
             # 2. 高危操作检测
             security_config = self.config.get_security_config()
             dangerous_tools = security_config.get("dangerous_tools", ["execute_shell", "start_process"])
@@ -252,6 +294,15 @@ class Agent:
             # 3. 执行工具
             result = await self.mcp_router.execute_tool_call(name, arguments)
             logger.info(f"[{name}] 执行结果: {result}")
+            print(f"[{name}] 执行结果: {result}", flush=True)
+
+            # 根据执行结果更新重复追踪状态
+            if result.get("status") == "success":
+                last_command_signature = current_command_signature
+            else:
+                # 如果命令执行失败，则重复链中断
+                last_command_signature = None
+
             # 4. 记录到history
             history.append({"command": call, "result": result})
             # 5. LLM中间总结

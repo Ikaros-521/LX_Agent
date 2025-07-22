@@ -15,30 +15,27 @@ class OpenAILLM(BaseLLM):
     OpenAI大模型实现
     """
     
-    def __init__(self, base_url: str = None, api_key: str = None, model: str = "gpt-4", **kwargs):
-        """
-        初始化OpenAI大模型
+    def __init__(self, config: Dict[str, Any]):
+        # 1. 首先调用父类的__init__方法，正确传递配置
+        super().__init__(config)
         
-        Args:
-            base_url: OpenAI API地址，默认为https://api.openai.com/v1
-            api_key: OpenAI API密钥，如果为None则尝试从环境变量获取
-            model: 模型名称，默认为gpt-4
-            **kwargs: 其他参数
-        """
-        self.base_url = base_url or "https://api.openai.com/v1"
-        self.api_key = api_key or os.environ.get("OPENAI_API_KEY")
-        if not self.api_key:
-            logger.warning("OpenAI API key not provided and not found in environment variables")
-        self.model = model
+        # 2. 初始化 OpenAI 客户端
+        self.client = openai.OpenAI(
+            api_key=config.get("api_key"),
+            base_url=config.get("base_url")
+        )
+
+        # 3. 恢复 self.model 属性，供 generate/generate_stream 方法使用
+        self.model = config.get("model")
+
+        # 4. 恢复 self.default_params 字典，并从 config 中读取参数
         self.default_params = {
-            "temperature": kwargs.get("temperature", 0.7),
-            "max_tokens": kwargs.get("max_tokens", 4096),
-            "top_p": kwargs.get("top_p", 1.0),
-            "frequency_penalty": kwargs.get("frequency_penalty", 0.0),
-            "presence_penalty": kwargs.get("presence_penalty", 0.0)
+            "temperature": config.get("temperature", 0.7),
+            "max_tokens": self.max_tokens,  # 直接使用父类中已初始化的max_tokens
+            "top_p": config.get("top_p", 1.0),
+            "frequency_penalty": config.get("frequency_penalty", 0.0),
+            "presence_penalty": config.get("presence_penalty", 0.0)
         }
-        # 新版openai用client实例
-        self.client = openai.OpenAI(api_key=self.api_key, base_url=self.base_url)
 
     def generate(self, prompt: str, **kwargs) -> str:
         """
