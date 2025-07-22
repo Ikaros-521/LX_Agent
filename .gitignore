@@ -16,3 +16,4 @@ logs/
 node_modules
 .history
 tmp
+tests/1.py

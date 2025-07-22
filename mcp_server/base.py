@@ -9,7 +9,7 @@ class BaseMCP(ABC):
     """
     
     @abstractmethod
-    def connect(self) -> bool:
+    async def connect(self) -> bool:
         """
         连接到MCP服务
         
@@ -19,14 +19,14 @@ class BaseMCP(ABC):
         pass
         
     @abstractmethod
-    def disconnect(self) -> None:
+    async def disconnect(self) -> None:
         """
         断开MCP连接
         """
         pass
         
     @abstractmethod
-    def execute_command(self, command: str, **kwargs) -> Dict[str, Any]:
+    async def execute_command(self, command: str, **kwargs) -> Dict[str, Any]:
         """
         执行命令
         
@@ -40,7 +40,7 @@ class BaseMCP(ABC):
         pass
         
     @abstractmethod
-    def get_status(self) -> Dict[str, Any]:
+    async def get_status(self) -> Dict[str, Any]:
         """
         获取MCP状态
         
@@ -50,7 +50,7 @@ class BaseMCP(ABC):
         pass
         
     @abstractmethod
-    def get_capabilities(self) -> List[str]:
+    async def get_capabilities(self) -> List[str]:
         """
         返回该MCP支持的能力列表
         
@@ -60,7 +60,7 @@ class BaseMCP(ABC):
         pass
         
     @abstractmethod
-    def is_available(self) -> bool:
+    async def is_available(self) -> bool:
         """
         检查MCP是否可用
         
@@ -70,7 +70,7 @@ class BaseMCP(ABC):
         pass
 
     @abstractmethod
-    def tools_list(self) -> Dict[str, Any]:
+    async def list_tools(self) -> Dict[str, Any]:
         """
         返回该MCP支持的工具列表，符合MCP协议标准
         Returns:
@@ -79,7 +79,7 @@ class BaseMCP(ABC):
         pass
         
     @abstractmethod
-    def tools_call(self, name: str, arguments: Dict[str, Any]) -> Dict[str, Any]:
+    async def call_tool(self, name: str, arguments: Dict[str, Any]) -> Dict[str, Any]:
         """
         执行工具调用，符合MCP协议标准
         Args:

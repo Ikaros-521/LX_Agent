@@ -26,7 +26,7 @@ class LocalMCPAdapter(BaseMCP):
         self.connected = False
         self.system = platform.system()
     
-    def connect(self) -> bool:
+    async def connect(self) -> bool:
         """
         连接到本地MCP
         
@@ -37,13 +37,13 @@ class LocalMCPAdapter(BaseMCP):
         self.connected = True
         return True
     
-    def disconnect(self) -> None:
+    async def disconnect(self) -> None:
         """
         断开本地MCP连接
         """
         self.connected = False
     
-    def execute_command(self, command: str, **kwargs) -> Dict[str, Any]:
+    async def execute_command(self, command: str, **kwargs) -> Dict[str, Any]:
         """
         执行本地命令
         
@@ -84,7 +84,7 @@ class LocalMCPAdapter(BaseMCP):
                 "error": str(e)
             }
     
-    def get_status(self) -> Dict[str, Any]:
+    async def get_status(self) -> Dict[str, Any]:
         """
         获取本地MCP状态
         
@@ -97,7 +97,7 @@ class LocalMCPAdapter(BaseMCP):
             "capabilities": self.capabilities
         }
     
-    def get_capabilities(self) -> List[str]:
+    async def get_capabilities(self) -> List[str]:
         """
         返回本地MCP支持的能力列表
         
@@ -106,7 +106,7 @@ class LocalMCPAdapter(BaseMCP):
         """
         return self.capabilities
     
-    def is_available(self) -> bool:
+    async def is_available(self) -> bool:
         """
         检查本地MCP是否可用
         
@@ -115,7 +115,7 @@ class LocalMCPAdapter(BaseMCP):
         """
         return self.connected
 
-    def tools_list(self) -> Dict[str, Any]:
+    async def list_tools(self) -> Dict[str, Any]:
         """
         返回本地MCP支持的工具列表，符合MCP协议标准
         """
@@ -256,9 +256,9 @@ class LocalMCPAdapter(BaseMCP):
                     "required": ["output_path", "mode"]
                 }
             })
-        return {"tools": tools}
+        return tools
     
-    def tools_call(self, name: str, arguments: Dict[str, Any]) -> Dict[str, Any]:
+    async def call_tool(self, name: str, arguments: Dict[str, Any]) -> Dict[str, Any]:
         """
         执行工具调用，符合MCP协议标准
         """

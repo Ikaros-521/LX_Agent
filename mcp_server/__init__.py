@@ -13,7 +13,6 @@ MCP (Machine Control Protocol) 适配层
 
 from .base import BaseMCP
 from .local_mcp import LocalMCPAdapter
-from .cloud_mcp import CloudMCPAdapter
 from .async_cloud_mcp import AsyncCloudMCPAdapter
 from .factory import MCPFactory
 from .router import MCPRouter
@@ -21,7 +20,6 @@ from .router import MCPRouter
 __all__ = [
     'BaseMCP',
     'LocalMCPAdapter',
-    'CloudMCPAdapter',
     'AsyncCloudMCPAdapter',
     'MCPFactory',
     'MCPRouter'

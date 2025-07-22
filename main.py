@@ -74,10 +74,10 @@ async def interactive_mode(agent: Agent):
     print("LX_Agent 交互模式 (输入 'exit' 或 'quit' 退出)", flush=True)
     print("可用MCP服务:", flush=True)
     
-    available_mcps = agent.mcp_router.get_available_mcps()
+    available_mcps = await agent.mcp_router.get_available_mcps()
     logger.info(f"检测到可用MCP服务: {len(available_mcps)} 个")
     for name, mcp in available_mcps:
-        capabilities = mcp.get_capabilities()
+        capabilities = await mcp.get_capabilities()
         logger.debug(f"MCP: {name}, 能力: {capabilities}")
         print(f"  - {name}: {', '.join(capabilities)}", flush=True)
     

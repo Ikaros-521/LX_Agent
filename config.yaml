@@ -33,26 +33,17 @@ mcp:
       enabled: true
       priority: 10
       # 支持的能力
-      capabilities: ["list_directory", "read_file", "start_process", "execute_shell", "mouse_click", "move_mouse", "key_press", "sleep", "ocr", "screenshot"]
-    # 云端MCP
-    cloud:
+      capabilities: ["list_directory", "read_file", "execute_shell", "mouse_click", "move_mouse", "key_press", "sleep", "ocr", "screenshot"]
+    # 云MCP（支持多个实例，示例）
+    test:
       type: "cloud"
       enabled: true
-      priority: 5
-      url: "https://example.com/mcp/api"
-      api_key: "YOUR_CLOUD_MCP_API_KEY"
-      timeout: 30
-      capabilities: ["file", "browser", "mouse", "keyboard", "process", "shell"]
-    # 异步云MCP（支持多个实例，示例）
-    mcp-playwright:
-      type: "async_cloud"
-      enabled: true
       priority: 3
-      url: "https://server.smithery.ai/@adalovu/mcp-playwright/mcp?api_key=dbbcc55b-a29c-4865-a21f-4ea0872c6419&profile=stale-constrictor-mc9Nzo"
+      url: "http://localhost:8931/sse"
       api_key: "YOUR_ASYNC_CLOUD_MCP_API_KEY_1"
       timeout: 30
     async_cloud_2:
-      type: "async_cloud"
+      type: "cloud"
       enabled: false
       priority: 2
       url: "https://example.com/mcp/async_api2"

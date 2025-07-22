@@ -90,7 +90,7 @@ class Agent:
         if self.llm:
             try:
                 # 获取所有MCP能力详情
-                capabilities_detail = self.mcp_router.get_all_tools()
+                capabilities_detail = await self.mcp_router.get_all_tools()
                 return self.llm.analyze_command(command, capabilities_detail)
             except Exception as e:
                 logger.error(f"Error analyzing command with LLM: {str(e)}")
@@ -128,7 +128,7 @@ class Agent:
             Dict[str, Any]: 命令执行结果
         """
         # 获取所有可用工具
-        all_tools = self.mcp_router.get_all_tools()
+        all_tools = await self.mcp_router.get_all_tools()
         
         os_type = platform.system()
         # 让LLM生成工具调用，传递操作系统类型和上下文
@@ -200,7 +200,7 @@ class Agent:
         """
         if history is None:
             history = []
-        all_tools = self.mcp_router.get_all_tools()
+        all_tools = await self.mcp_router.get_all_tools()
         os_type = platform.system()
         step = 0
         while step < max_steps:
@@ -217,6 +217,7 @@ class Agent:
                 # 最终总结
                 final_summary = None
                 if self.llm:
+                    print("开始最终总结...", flush=True)
                     final_summary = self.llm.final_summary(
                         command, history, stream=True, on_delta=lambda delta: print(delta, end='', flush=True)
                     )
@@ -246,6 +247,7 @@ class Agent:
             # 5. LLM中间总结
             summary = None
             if self.llm:
+                print("开始中间总结...", flush=True)
                 summary = self.llm.intermediate_summary(
                     command, history, stream=True, on_delta=lambda delta: print(delta, end='', flush=True)
                 )
@@ -262,6 +264,7 @@ class Agent:
                 # 最终总结
                 final_summary = None
                 if self.llm:
+                    print("开始最终总结...", flush=True)
                     final_summary = self.llm.final_summary(
                         command, history, stream=True, on_delta=lambda delta: print(delta, end='', flush=True)
                     )
@@ -281,6 +284,7 @@ class Agent:
         # 保底最终总结
         final_summary = None
         if self.llm:
+            print("开始最终总结...", flush=True)
             final_summary = self.llm.final_summary(
                 command, history, stream=True, on_delta=lambda delta: print(delta, end='', flush=True)
             )

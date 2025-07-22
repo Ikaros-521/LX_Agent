@@ -32,7 +32,7 @@ LX_Agent/
 │   ├── __init__.py
 │   ├── base.py        # MCP 抽象接口
 │   ├── local_mcp.py   # 本地 MCP 适配器
-│   ├── cloud_mcp.py   # 云端 MCP 适配器
+│   ├── async_cloud_mcp.py   # 云端 MCP 适配器
 │   ├── factory.py     # MCP 工厂类
 │   └── router.py      # MCP 路由器
 └── tools/             # 工具层
@@ -102,6 +102,12 @@ python main.py -c custom_config.yaml
 ```bash
 python main.py -v
 ```
+
+## 本地部署MCP服务
+
+安装Nodejs环境  
+
+例如：`npx @playwright/mcp@latest --port 8931`  
 
 ## 扩展开发
 
