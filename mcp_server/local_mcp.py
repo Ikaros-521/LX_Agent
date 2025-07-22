@@ -226,13 +226,13 @@ class LocalMCPAdapter(BaseMCP):
         if "ocr" in self.capabilities:
             tools.append({
                 "name": "ocr",
-                "description": "OCR识别图片中的文字（支持多后端和多语言，lang如'chi_sim'、'eng'、'chi_sim+eng'）。detailed=True时返回每个文本的坐标、置信度等结构化信息，detailed=False时仅返回纯文本。",
+                "description": "OCR识别图片中的文字（支持多后端和多语言，lang如'ch_sim'、'en'、'ch_sim+en'）。detailed=True时返回每个文本的坐标、置信度等结构化信息，detailed=False时仅返回纯文本。",
                 "inputSchema": {
                     "type": "object",
                     "properties": {
                         "image_path": {"type": "string", "description": "图片文件路径"},
-                        "backend": {"type": "string", "description": "OCR后端，可选：tesseract、easyocr", "default": "tesseract"},
-                        "lang": {"type": "string", "description": "OCR语言，如'chi_sim'、'eng'、'chi_sim+eng'，可选"},
+                        "backend": {"type": "string", "description": "OCR后端，可选：tesseract、easyocr", "default": "easyocr"},
+                        "lang": {"type": "string", "description": "OCR语言，如'ch_sim'、'en'、'ch_sim+en'，可选"},
                         "detailed": {"type": "boolean", "description": "是否返回详细结构化数据和坐标，True时返回每个文本的坐标、置信度等信息，False时仅返回纯文本", "default": False}
                     },
                     "required": ["image_path"]
@@ -332,7 +332,7 @@ class LocalMCPAdapter(BaseMCP):
             elif name == "ocr":
                 from tools.ocr_tool import OCRFactory
                 image_path = arguments.get("image_path")
-                backend = arguments.get("backend", "tesseract")
+                backend = arguments.get("backend", "easyocr")
                 lang = arguments.get("lang")
                 detailed = arguments.get("detailed", False)
                 if not image_path:

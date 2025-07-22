@@ -13,11 +13,13 @@ from .process_tool import ProcessTool
 from .mouse_keyboard_tool import MouseKeyboardTool
 from .sleep_tool import sleep_tool
 from .screenshot_tool import ScreenshotTool
-from . import ocr_tool
+from .ocr_tool import OCRFactory
 
 __all__ = [
     'FileTool',
     'ProcessTool',
     'MouseKeyboardTool',
-    'sleep_tool'
+    'sleep_tool',
+    'ScreenshotTool',
+    'OCRFactory'
 ]

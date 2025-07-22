@@ -3,17 +3,24 @@ pyyaml>=6.0
 requests>=2.28.0
 
 # 日志相关
-colorlog>=6.7.0
+loguru
 
+# MCP
+mcp>=1.12.0
+
+# LLM
 openai
+
+# Tool
+# 模拟键鼠
 pyautogui
 pygetwindow>=0.0.9
 pywin32
 
-loguru
-
+# OCR
 pytesseract>=0.3.13
 pillow>=10.4.0
-# easyocr>=1.5.0
 
-mcp>=1.12.0
+easyocr>=1.7.2
+# 国内源下载torch全家桶
+# pip install torch torchvision torchaudio --index-url https://mirrors.nju.edu.cn/pytorch/whl/cu126
