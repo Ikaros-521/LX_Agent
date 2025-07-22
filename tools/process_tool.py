@@ -58,7 +58,7 @@ class ProcessTool:
                 "pid": process.pid,
                 "command": command
             }
-        except Exception as e:
+        except BaseException as e:
             logger.error(f"Failed to start process: {str(e)}")
             return {
                 "status": "error",
@@ -115,7 +115,7 @@ class ProcessTool:
                 "status": "success",
                 "pid": pid
             }
-        except Exception as e:
+        except BaseException as e:
             logger.error(f"Failed to stop process {pid}: {str(e)}")
             return {
                 "status": "error",
@@ -181,7 +181,7 @@ class ProcessTool:
                 "status": "success",
                 "processes": processes
             }
-        except Exception as e:
+        except BaseException as e:
             logger.error(f"Failed to list processes: {str(e)}")
             return {
                 "status": "error",
@@ -257,7 +257,7 @@ class ProcessTool:
                 "status": "error",
                 "error": f"Process {pid} not found"
             }
-        except Exception as e:
+        except BaseException as e:
             logger.error(f"Failed to get process info for {pid}: {str(e)}")
             return {
                 "status": "error",
@@ -286,7 +286,7 @@ class ProcessTool:
                 "stderr": stderr,
                 "command": command
             }
-        except Exception as e:
+        except BaseException as e:
             logger.error(f"Failed to execute command: {str(e)}")
             return {
                 "status": "error",

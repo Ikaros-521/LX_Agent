@@ -67,7 +67,7 @@ class OpenAILLM(BaseLLM):
             # logger.info(f"OpenAI返回需要调用的工具: {response.choices[0].message.content.strip()}")
             # 新版返回choices[0].message.content
             return response.choices[0].message.content.strip()
-        except Exception as e:
+        except BaseException as e:
             logger.error(f"Error generating text with OpenAI: {str(e)} | prompt={prompt} | params={kwargs}", exc_info=True)
             return f"Error: {str(e)}"
 
@@ -96,7 +96,7 @@ class OpenAILLM(BaseLLM):
                 delta = getattr(chunk.choices[0].delta, 'content', None)
                 if delta:
                     yield delta
-        except Exception as e:
+        except BaseException as e:
             logger.error(f"Error in OpenAI stream: {str(e)}")
             yield f"[OpenAI流式错误]: {str(e)}"
 
@@ -124,7 +124,7 @@ class OpenAILLM(BaseLLM):
             if isinstance(text, str):
                 return embeddings[0]
             return embeddings
-        except Exception as e:
+        except BaseException as e:
             logger.error(f"Error getting embeddings with OpenAI: {str(e)} | text={text}", exc_info=True)
             if isinstance(text, str):
                 return [0.0] * 1536  # 返回零向量，维度为1536
@@ -146,7 +146,7 @@ class OpenAILLM(BaseLLM):
             response = self.generate(prompt)
             capabilities = [cap.strip() for cap in response.split(",")]
             return capabilities
-        except Exception as e:
+        except BaseException as e:
             logger.error(f"Error analyzing command with OpenAI: {str(e)} | command={command}", exc_info=True)
             capabilities = []
             if any(kw in command.lower() for kw in ["file", "folder", "directory", "path", "open", "read", "write"]):

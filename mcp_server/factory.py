@@ -54,6 +54,6 @@ class MCPFactory:
                 except (ImportError, AttributeError) as e:
                     logger.error(f"Failed to load custom MCP {name}: {str(e)}")
                     return None
-        except Exception as e:
+        except BaseException as e:
             logger.error(f"Failed to create MCP {name}: {str(e)}")
             return None

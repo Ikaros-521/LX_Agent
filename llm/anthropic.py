@@ -76,7 +76,7 @@ class AnthropicLLM(BaseLLM):
             # 解析响应
             result = response.json()
             return result["content"][0]["text"]
-        except Exception as e:
+        except BaseException as e:
             logger.error(f"Error generating text with Anthropic: {str(e)}")
             return f"Error: {str(e)}"
     
@@ -90,7 +90,7 @@ class AnthropicLLM(BaseLLM):
         try:
             # 目前requests不支持流式，兜底实现
             yield self.generate(prompt, **kwargs)
-        except Exception as e:
+        except BaseException as e:
             logger.error(f"Error in Anthropic stream: {str(e)}")
             yield f"[Anthropic流式错误]: {str(e)}"
     
@@ -130,7 +130,7 @@ class AnthropicLLM(BaseLLM):
             response = self.generate(prompt)
             capabilities = [cap.strip() for cap in response.split(",")]
             return capabilities
-        except Exception as e:
+        except BaseException as e:
             logger.error(f"Error analyzing command with Anthropic: {str(e)}")
             # 简单实现，根据关键词判断
             capabilities = []

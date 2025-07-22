@@ -78,7 +78,7 @@ class LocalMCPAdapter(BaseMCP):
                 "stdout": stdout,
                 "stderr": stderr
             }
-        except Exception as e:
+        except BaseException as e:
             return {
                 "status": "error",
                 "error": str(e)
@@ -344,7 +344,7 @@ class LocalMCPAdapter(BaseMCP):
                         return {"status": "success", "result": result}
                     else:
                         return {"status": "success", "text": result}
-                except Exception as e:
+                except BaseException as e:
                     return {"status": "error", "error": str(e)}
             elif name == "screenshot":
                 from tools.screenshot_tool import ScreenshotTool
@@ -369,9 +369,9 @@ class LocalMCPAdapter(BaseMCP):
                     else:
                         return {"status": "error", "error": f"未知截图模式: {mode}"}
                     return {"status": "success", "image_path": path}
-                except Exception as e:
+                except BaseException as e:
                     return {"status": "error", "error": str(e)}
             else:
                 return {"status": "error", "error": f"Unknown tool: {name}"}
-        except Exception as e:
+        except BaseException as e:
             return {"status": "error", "error": str(e)}

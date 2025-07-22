@@ -66,7 +66,7 @@ def run_command(command: str, shell: bool = None, **kwargs) -> Tuple[int, str, s
         # 获取输出
         stdout, stderr = process.communicate()
         return process.returncode, stdout, stderr
-    except Exception as e:
+    except BaseException as e:
         logger.error(f"Failed to run command: {str(e)}")
         return -1, "", str(e)
 
@@ -84,7 +84,7 @@ def ensure_dir(path: str) -> bool:
         if not os.path.exists(path):
             os.makedirs(path)
         return True
-    except Exception as e:
+    except BaseException as e:
         logger.error(f"Failed to create directory {path}: {str(e)}")
         return False
 

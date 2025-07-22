@@ -67,7 +67,7 @@ class LocalLLM(BaseLLM):
         except ImportError as e:
             logger.error(f"Failed to import required modules: {str(e)}")
             logger.error("Please install transformers and torch: pip install transformers torch")
-        except Exception as e:
+        except BaseException as e:
             logger.error(f"Failed to load model: {str(e)}")
     
     def generate(self, prompt: str, **kwargs) -> str:
@@ -111,7 +111,7 @@ class LocalLLM(BaseLLM):
             response = output_text[len(prompt):].strip()
             
             return response
-        except Exception as e:
+        except BaseException as e:
             logger.error(f"Error generating text with local model: {str(e)}")
             return f"Error: {str(e)}"
     
@@ -150,7 +150,7 @@ class LocalLLM(BaseLLM):
             except ImportError:
                 # 没有streamer时，直接yield完整内容
                 yield self.generate(prompt, **kwargs)
-        except Exception as e:
+        except BaseException as e:
             logger.error(f"Error in LocalLLM stream: {str(e)}")
             yield f"[LocalLLM流式错误]: {str(e)}"
     
@@ -201,7 +201,7 @@ class LocalLLM(BaseLLM):
             if isinstance(text, str):
                 return embeddings[0]
             return embeddings
-        except Exception as e:
+        except BaseException as e:
             logger.error(f"Error getting embeddings with local model: {str(e)}")
             if isinstance(text, str):
                 return [0.0] * 768  # 返回零向量，维度为768
@@ -223,7 +223,7 @@ class LocalLLM(BaseLLM):
             response = self.generate(prompt)
             capabilities = [cap.strip() for cap in response.split(",")]
             return capabilities
-        except Exception as e:
+        except BaseException as e:
             logger.error(f"Error analyzing command with local model: {str(e)}")
             # 简单实现，根据关键词判断
             capabilities = []

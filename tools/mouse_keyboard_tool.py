@@ -19,7 +19,7 @@ class MouseKeyboardTool:
         try:
             self.user32.SetCursorPos(x, y)
             return {"status": "success", "x": x, "y": y}
-        except Exception as e:
+        except BaseException as e:
             logger.error(f"Failed to move mouse: {e}")
             return {"status": "error", "error": str(e)}
 
@@ -38,7 +38,7 @@ class MouseKeyboardTool:
             else:
                 return {"status": "error", "error": "Unsupported button"}
             return {"status": "success", "button": button}
-        except Exception as e:
+        except BaseException as e:
             logger.error(f"Failed to click mouse: {e}")
             return {"status": "error", "error": str(e)}
 
@@ -47,7 +47,7 @@ class MouseKeyboardTool:
             MOUSEEVENTF_WHEEL = 0x0800
             self.user32.mouse_event(MOUSEEVENTF_WHEEL, 0, 0, delta, 0)
             return {"status": "success", "delta": delta}
-        except Exception as e:
+        except BaseException as e:
             logger.error(f"Failed to scroll mouse: {e}")
             return {"status": "error", "error": str(e)}
 
@@ -60,7 +60,7 @@ class MouseKeyboardTool:
             time.sleep(duration)
             self.user32.keybd_event(key_code, 0, KEYEVENTF_KEYUP, 0)
             return {"status": "success", "key_code": key_code}
-        except Exception as e:
+        except BaseException as e:
             logger.error(f"Failed to press key: {e}")
             return {"status": "error", "error": str(e)}
 
@@ -71,6 +71,6 @@ class MouseKeyboardTool:
                 self.key_press(vk)
                 time.sleep(interval)
             return {"status": "success", "text": text}
-        except Exception as e:
+        except BaseException as e:
             logger.error(f"Failed to type text: {e}")
             return {"status": "error", "error": str(e)} 

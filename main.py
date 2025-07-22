@@ -61,7 +61,7 @@ async def main():
     except KeyboardInterrupt:
         logger.info("用户中断程序")
         return 0
-    except Exception as e:
+    except BaseException as e:
         logger.error(f"主程序异常: {str(e)}")
         return 1
     finally:
@@ -103,7 +103,7 @@ async def interactive_mode(agent: Agent):
             logger.info("交互模式被用户中断")
             print("\nInterrupted", flush=True)
             break
-        except Exception as e:
+        except BaseException as e:
             logger.error(f"交互模式异常: {str(e)}")
 
 async def execute_command(agent: Agent, command: str, history=None):
@@ -129,4 +129,9 @@ if __name__ == "__main__":
     log_format = log_config.get("format", "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - <level>{message}</level>")
     logger.add(log_file, level=log_level, rotation=rotation, retention=backup_count, format=log_format)
 
-    sys.exit(asyncio.run(main()))
+    try:
+        asyncio.run(main())
+    except BaseException as e:
+        logger.exception(f"主程序发生未捕获异常: {e}")
+        print(f"主程序发生未捕获异常: {e}", file=sys.stderr)
+        sys.exit(1)

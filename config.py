@@ -40,7 +40,7 @@ class Config:
                 
             logger.info(f"Config loaded from {self.config_path}")
             return True
-        except Exception as e:
+        except BaseException as e:
             logger.error(f"Failed to load config: {str(e)}")
             return False
     
@@ -57,7 +57,7 @@ class Config:
                 
             logger.info(f"Config saved to {self.config_path}")
             return True
-        except Exception as e:
+        except BaseException as e:
             logger.error(f"Failed to save config: {str(e)}")
             return False
     

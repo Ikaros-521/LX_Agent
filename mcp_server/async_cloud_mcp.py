@@ -2,6 +2,7 @@ from mcp.client.streamable_http import streamablehttp_client
 from loguru import logger
 from typing import Any, List, Dict
 import asyncio
+from contextlib import AsyncExitStack
 
 
 class Tool:
@@ -67,30 +68,32 @@ class AsyncCloudMCPAdapter:
         self._client_ctx = None
         self._client = None
         self._session_ctx = None
+        self.exit_stack = None
 
     async def connect(self):
         import mcp  # 避免循环依赖
+        self.exit_stack = AsyncExitStack()
+        await self.exit_stack.__aenter__()
         self._client_ctx = streamablehttp_client(self.url)
-        self._client = await self._client_ctx.__aenter__()
+        self._client = await self.exit_stack.enter_async_context(self._client_ctx)
         read_stream, write_stream, _ = self._client
         self._session_ctx = mcp.ClientSession(read_stream, write_stream)
-        self.session = await self._session_ctx.__aenter__()
+        self.session = await self.exit_stack.enter_async_context(self._session_ctx)
         await self.session.initialize()
         try:
             self.capabilities = await self.get_capabilities()
-        except Exception as e:
+        except BaseException as e:
             logger.error(f"Error fetching capabilities: {e}")
             self.capabilities = []
 
     async def disconnect(self):
-        if self.session and self._session_ctx:
-            await self._session_ctx.__aexit__(None, None, None)
-            self.session = None
-            self._session_ctx = None
-        if self._client_ctx:
-            await self._client_ctx.__aexit__(None, None, None)
-            self._client_ctx = None
-            self._client = None
+        if self.exit_stack:
+            await self.exit_stack.aclose()
+            self.exit_stack = None
+        self.session = None
+        self._client_ctx = None
+        self._client = None
+        self._session_ctx = None
 
     async def is_available(self):
         return self.session is not None
@@ -121,7 +124,7 @@ class AsyncCloudMCPAdapter:
                 }
                 for tool in tools
             ]
-        except Exception as e:
+        except BaseException as e:
             logger.error(f"Error listing tools: {e}")
             return []
 
@@ -132,7 +135,7 @@ class AsyncCloudMCPAdapter:
         while attempt < retries:
             try:
                 return await self.session.call_tool(name, arguments)
-            except Exception as e:
+            except BaseException as e:
                 attempt += 1
                 logger.warning(f"Error executing tool: {e}. Attempt {attempt} of {retries}.")
                 if attempt < retries:
@@ -146,7 +149,7 @@ class AsyncCloudMCPAdapter:
         try:
             tools = await self._get_tools()
             return [tool.name for tool in tools]
-        except Exception as e:
+        except BaseException as e:
             logger.error(f"Error getting capabilities: {e}")
             return []
     

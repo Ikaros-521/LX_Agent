@@ -48,7 +48,7 @@ class Agent:
             self.llm = LLMFactory.create_from_config(self.config.config)
             if not self.llm:
                 logger.warning("Failed to initialize LLM, will use fallback methods")
-        except Exception as e:
+        except BaseException as e:
             logger.warning(f"Error initializing LLM: {str(e)}")
             logger.warning("Will use fallback methods for command analysis")
             
@@ -92,7 +92,7 @@ class Agent:
                 # 获取所有MCP能力详情
                 capabilities_detail = await self.mcp_router.get_all_tools()
                 return self.llm.analyze_command(command, capabilities_detail)
-            except Exception as e:
+            except BaseException as e:
                 logger.error(f"Error analyzing command with LLM: {str(e)}")
                 logger.info("Falling back to keyword-based analysis")
         
@@ -175,7 +175,7 @@ class Agent:
         if self.llm:
             try:
                 return self.llm.summarize_result(command, result)
-            except Exception as e:
+            except BaseException as e:
                 logger.error(f"Error summarizing result with LLM: {str(e)}")
                 logger.info("Falling back to simple result summary")
         

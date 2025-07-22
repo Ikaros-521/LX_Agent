@@ -86,7 +86,7 @@ class BaseLLM(ABC):
                 return ''.join(chunks)
             else:
                 return self.generate(prompt)
-        except Exception as e:
+        except BaseException as e:
             logger.error(f"Error in intermediate_summary: {str(e)}")
             return "[中间总结失败]"
 
@@ -114,7 +114,7 @@ class BaseLLM(ABC):
                 return ''.join(chunks)
             else:
                 return self.generate(prompt)
-        except Exception as e:
+        except BaseException as e:
             logger.error(f"Error in final_summary: {str(e)}")
             return "[最终总结失败]"
 
@@ -149,7 +149,7 @@ class BaseLLM(ABC):
                 try:
                     import ast
                     return ast.literal_eval(response)
-                except Exception:
+                except BaseException:
                     return []
         try:
             tools_info = []
@@ -191,6 +191,6 @@ class BaseLLM(ABC):
                 logger.info(f"LLM返回工具调用: {response}")
             print("")
             return parse_llm_json_response(response)
-        except Exception as e:
+        except BaseException as e:
             logger.error(f"Error generating tool calls: {str(e)}")
             return []

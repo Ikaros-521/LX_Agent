@@ -30,46 +30,34 @@ class MCPRouter:
     async def initialize(self) -> bool:
         """
         初始化所有MCP服务
-        
         Returns:
             bool: 初始化是否成功
         """
         if self.initialized:
             return True
-            
         mcp_config = self.config.get("mcp", {})
         services = mcp_config.get("services", {})
-        
-        # 创建并连接所有启用的MCP服务
         for name, service_config in services.items():
-            # 检查服务是否启用
             if not service_config.get("enabled", True):
                 logger.info(f"MCP service {name} is disabled, skipping")
                 continue
-                
-            # 创建MCP适配器
             mcp = MCPFactory.create(name, service_config)
             if not mcp:
                 logger.error(f"Failed to create MCP service {name}")
                 continue
-                
-            # 连接MCP服务
             try:
                 connect_method = mcp.connect
-                if inspect.iscoroutinefunction(connect_method):
+
+                try:
                     await connect_method()
                     self.mcps[name] = mcp
                     logger.info(f"MCP service {name} connected successfully")
-                else:
-                    if connect_method():
-                        self.mcps[name] = mcp
-                        logger.info(f"MCP service {name} connected successfully")
-                    else:
-                        logger.error(f"Failed to connect to MCP service {name}")
-            except Exception as e:
-                logger.error(f"Error connecting to MCP service {name}: {str(e)}")
-        
-        # 设置初始化标志
+                except BaseException as e:
+                    logger.error(f"Error connecting to MCP service {name}: {str(e)}，已跳过")
+                    continue
+            except BaseException as e:
+                logger.error(f"Error connecting to MCP service {name}: {str(e)}，已跳过")
+                continue
         self.initialized = len(self.mcps) > 0
         return self.initialized
     
@@ -226,7 +214,7 @@ class MCPRouter:
             result = await mcp.execute_command(command, **kwargs)
             result["mcp_name"] = name
             return result
-        except Exception as e:
+        except BaseException as e:
             # 如果执行失败，尝试使用其他MCP
             logger.error(f"Failed to execute command with MCP {name}: {str(e)}")
             
@@ -248,7 +236,7 @@ class MCPRouter:
                     result["mcp_name"] = other_name
                     result["fallback"] = True
                     return result
-                except Exception as other_e:
+                except BaseException as other_e:
                     logger.error(f"Failed to execute command with fallback MCP {other_name}: {str(other_e)}")
             
             # 所有MCP都失败
@@ -272,7 +260,7 @@ class MCPRouter:
                 else:
                     disconnect_method()
                 logger.info(f"MCP service {name} disconnected")
-            except Exception as e:
+            except BaseException as e:
                 logger.error(f"Error disconnecting MCP service {name}: {str(e)}")
         self.mcps.clear()
         self.initialized = False
@@ -291,7 +279,7 @@ class MCPRouter:
                     tool = dict(tool)  # 确保是 dict
                     tool["mcp_name"] = name  # 标记工具来源
                     all_tools.append(tool)
-            except Exception as e:
+            except BaseException as e:
                 logger.warning(f"MCP {name} list_tools error: {e}")
         return all_tools
 
@@ -310,6 +298,6 @@ class MCPRouter:
                 tool_names = [tool["name"] for tool in tools]
                 if tool_name in tool_names:
                     return await mcp.call_tool(tool_name, arguments)
-            except Exception as e:
+            except BaseException as e:
                 logger.warning(f"MCP {name} call_tool error: {e}")
         return {"status": "error", "error": f"Tool {tool_name} not found"}

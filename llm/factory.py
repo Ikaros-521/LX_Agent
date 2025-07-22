@@ -58,7 +58,7 @@ class LLMFactory:
             else:
                 logger.error(f"Unsupported LLM type: {llm_type}")
                 return None
-        except Exception as e:
+        except BaseException as e:
             logger.error(f"Error creating LLM instance: {str(e)}")
             return None
     

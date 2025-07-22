@@ -39,7 +39,7 @@ mcp:
       type: "cloud"
       enabled: true
       priority: 3
-      url: "http://localhost:8931/sse"
+      url: "http://localhost:8931/mcp"
       api_key: "YOUR_ASYNC_CLOUD_MCP_API_KEY_1"
       timeout: 30
     async_cloud_2:

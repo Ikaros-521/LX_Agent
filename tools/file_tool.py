@@ -89,7 +89,7 @@ class FileTool:
                 "path": path,
                 "items": items
             }
-        except Exception as e:
+        except BaseException as e:
             logger.error(f"Failed to list directory {path}: {str(e)}")
             return {
                 "status": "error",
@@ -139,7 +139,7 @@ class FileTool:
                 "size": os.path.getsize(path),
                 "size_formatted": format_size(os.path.getsize(path))
             }
-        except Exception as e:
+        except BaseException as e:
             logger.error(f"Failed to read file {path}: {str(e)}")
             return {
                 "status": "error",
@@ -183,7 +183,7 @@ class FileTool:
                 "size": len(content),
                 "size_formatted": format_size(len(content))
             }
-        except Exception as e:
+        except BaseException as e:
             logger.error(f"Failed to write file {path}: {str(e)}")
             return {
                 "status": "error",
@@ -225,7 +225,7 @@ class FileTool:
                 "status": "success",
                 "path": path
             }
-        except Exception as e:
+        except BaseException as e:
             logger.error(f"Failed to delete {path}: {str(e)}")
             return {
                 "status": "error",
@@ -277,7 +277,7 @@ class FileTool:
                 "src_path": src_path,
                 "dst_path": dst_path
             }
-        except Exception as e:
+        except BaseException as e:
             logger.error(f"Failed to copy {src_path} to {dst_path}: {str(e)}")
             return {
                 "status": "error",
@@ -326,7 +326,7 @@ class FileTool:
                 "src_path": src_path,
                 "dst_path": dst_path
             }
-        except Exception as e:
+        except BaseException as e:
             logger.error(f"Failed to move {src_path} to {dst_path}: {str(e)}")
             return {
                 "status": "error",
@@ -372,7 +372,7 @@ class FileTool:
                 "modified": os.path.getmtime(path),
                 "accessed": os.path.getatime(path)
             }
-        except Exception as e:
+        except BaseException as e:
             logger.error(f"Failed to get info for {path}: {str(e)}")
             return {
                 "status": "error",

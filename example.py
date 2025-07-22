@@ -46,7 +46,7 @@ def main():
     except KeyboardInterrupt:
         print("\n操作被中断")
         return 0
-    except Exception as e:
+    except BaseException as e:
         logger.error(f"Error: {str(e)}")
         return 1
     finally:
