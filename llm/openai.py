@@ -37,6 +37,9 @@ class OpenAILLM(BaseLLM):
             "presence_penalty": config.get("presence_penalty", 0.0)
         }
 
+        # 5. 增加超时机制，默认60秒
+        self.timeout = config.get("timeout", 60)
+
     def generate(self, prompt: str, **kwargs) -> str:
         """
         生成文本响应
@@ -59,7 +62,8 @@ class OpenAILLM(BaseLLM):
                 max_tokens=params["max_tokens"],
                 top_p=params["top_p"],
                 frequency_penalty=params["frequency_penalty"],
-                presence_penalty=params["presence_penalty"]
+                presence_penalty=params["presence_penalty"],
+                timeout=self.timeout
             )
             # logger.info(f"OpenAI返回需要调用的工具: {response.choices[0].message.content.strip()}")
             # 新版返回choices[0].message.content
@@ -87,7 +91,8 @@ class OpenAILLM(BaseLLM):
                 top_p=params["top_p"],
                 frequency_penalty=params["frequency_penalty"],
                 presence_penalty=params["presence_penalty"],
-                stream=True
+                stream=True,
+                timeout=self.timeout
             )
             for chunk in response:
                 delta = getattr(chunk.choices[0].delta, 'content', None)
@@ -114,7 +119,8 @@ class OpenAILLM(BaseLLM):
                 texts = text
             response = self.client.embeddings.create(
                 model="text-embedding-ada-002",
-                input=texts
+                input=texts,
+                timeout=self.timeout
             )
             # 新版返回data[i].embedding
             embeddings = [item.embedding for item in response.data]
