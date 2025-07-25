@@ -120,7 +120,7 @@ class LocalMCPAdapter(BaseMCP):
         返回本地MCP支持的工具列表，符合MCP协议标准
         """
         tools = []
-        if "list_directory" in self.capabilities:
+        if "file_tool" in self.capabilities:
             tools.append({
                 "name": "list_directory",
                 "description": "列出目录内容",
@@ -132,7 +132,7 @@ class LocalMCPAdapter(BaseMCP):
                     "required": ["path"]
                 }
             })
-        if "read_file" in self.capabilities:
+            
             tools.append({
                 "name": "read_file",
                 "description": "读取文件内容",
@@ -144,7 +144,7 @@ class LocalMCPAdapter(BaseMCP):
                     "required": ["path"]
                 }
             })
-        if "start_process" in self.capabilities:
+        if "process_tool" in self.capabilities:
             tools.append({
                 "name": "start_process",
                 "description": "启动进程",
@@ -156,7 +156,7 @@ class LocalMCPAdapter(BaseMCP):
                     "required": ["command"]
                 }
             })
-        if "execute_shell" in self.capabilities:
+
             tools.append({
                 "name": "execute_shell",
                 "description": "执行Shell命令",
@@ -168,7 +168,7 @@ class LocalMCPAdapter(BaseMCP):
                     "required": ["command"]
                 }
             })
-        if "mouse_click" in self.capabilities:
+        if "mouse_keyboard_tool" in self.capabilities:
             tools.append({
                 "name": "mouse_click",
                 "description": "点击鼠标",
@@ -182,7 +182,7 @@ class LocalMCPAdapter(BaseMCP):
                     "required": ["x", "y"]
                 }
             })
-        if "move_mouse" in self.capabilities:
+            
             tools.append({
                 "name": "move_mouse",
                 "description": "移动鼠标",
@@ -195,7 +195,7 @@ class LocalMCPAdapter(BaseMCP):
                     "required": ["x", "y"]
                 }
             })
-        if "key_press" in self.capabilities:
+            
             tools.append({
                 "name": "key_press",
                 "description": "按下键盘按键",
@@ -207,7 +207,7 @@ class LocalMCPAdapter(BaseMCP):
                     "required": ["key"]
                 }
             })
-        if "sleep" in self.capabilities:
+        if "sleep_tool" in self.capabilities:
             tools.append({
                 "name": "sleep",
                 "description": "异步睡眠指定时间（ms或s）",
@@ -223,7 +223,7 @@ class LocalMCPAdapter(BaseMCP):
                     ]
                 }
             })
-        if "ocr" in self.capabilities:
+        if "ocr_tool" in self.capabilities:
             tools.append({
                 "name": "ocr",
                 "description": "OCR识别图片中的文字（支持多后端和多语言，lang如'ch_sim'、'en'、'ch_sim+en'）。detailed=True时返回每个文本的坐标、置信度等结构化信息，detailed=False时仅返回纯文本。",
@@ -238,7 +238,7 @@ class LocalMCPAdapter(BaseMCP):
                     "required": ["image_path"]
                 }
             })
-        if "screenshot" in self.capabilities:
+        if "screenshot_tool" in self.capabilities:
             tools.append({
                 "name": "screenshot",
                 "description": "截图工具，支持全屏、区域、窗口截图",
@@ -254,6 +254,38 @@ class LocalMCPAdapter(BaseMCP):
                         "window_title": {"type": "string", "description": "窗口标题，仅窗口截图时需要"}
                     },
                     "required": ["output_path", "mode"]
+                }
+            })
+        if "image_finder_tool" in self.capabilities:
+            tools.append({
+                "name": "find_text_pos",
+                "description": "在图像中查找指定文本的位置",
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "image_path": {"type": "string", "description": "图像路径"},
+                        "text": {"type": "string", "description": "要查找的文本"},
+                        "threshold": {"type": "number", "description": "匹配阈值，越高要求越精确", "default": 0.7},
+                        "ocr_backend": {"type": "string", "description": "OCR后端，可选：tesseract、easyocr", "default": "easyocr"},
+                        "lang": {"type": "string", "description": "OCR语言，如'ch_sim'、'en'、'ch_sim+en'，可选"}
+                    },
+                    "required": ["image_path", "text"]
+                }
+            })
+            
+            tools.append({
+                "name": "find_image_pos",
+                "description": "在图像中查找模板图像的位置（模板匹配）",
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "image_path": {"type": "string", "description": "要搜索的图像路径"},
+                        "template_path": {"type": "string", "description": "模板图像路径"},
+                        "threshold": {"type": "number", "description": "匹配阈值，越高要求越精确", "default": 0.8},
+                        "ocr_backend": {"type": "string", "description": "OCR后端，可选：tesseract、easyocr", "default": "easyocr"},
+                        "lang": {"type": "string", "description": "OCR语言，如'ch_sim'、'en'、'ch_sim+en'，可选"}
+                    },
+                    "required": ["image_path", "template_path"]
                 }
             })
         return tools
@@ -341,12 +373,16 @@ class LocalMCPAdapter(BaseMCP):
                 if not os.path.isabs(image_path):
                     image_path = os.path.abspath(image_path)
                 try:
+                    from common.json_utils import dumps, loads
                     ocr = OCRFactory.create(backend, lang=lang)
                     result = ocr.recognize(image_path, lang=lang, detailed=detailed)
+                    # 使用自定义JSON编码器处理可能包含numpy数据类型的结果
+                    # 先序列化再反序列化，确保所有numpy类型都被转换为Python原生类型
+                    result_serializable = loads(dumps(result))
                     if detailed:
-                        return {"status": "success", "result": result}
+                        return {"status": "success", "result": result_serializable}
                     else:
-                        return {"status": "success", "text": result}
+                        return {"status": "success", "text": result_serializable}
                 except BaseException as e:
                     return {"status": "error", "error": str(e)}
             elif name == "screenshot":
@@ -374,6 +410,39 @@ class LocalMCPAdapter(BaseMCP):
                     return {"status": "success", "image_path": path}
                 except BaseException as e:
                     return {"status": "error", "error": str(e)}
+            elif name == "find_text_pos":
+                from tools.image_finder_tool import ImageFinderTool
+                # 文找坐标功能
+                text = arguments.get("text")
+                image_path = arguments.get("image_path")
+                threshold = arguments.get("threshold", 0.7)
+                ocr_backend = arguments.get("ocr_backend", "easyocr")
+                lang = arguments.get("lang")
+                if not text or not image_path:
+                    return {"status": "error", "error": "缺少必要参数text或image_path"}
+                try:
+                    pos_tool = ImageFinderTool(ocr_backend=ocr_backend, lang=lang)
+                    result = pos_tool.find_text(image_path, text, threshold)
+                    return {"status": "success", "result": result}
+                except BaseException as e:
+                    return {"status": "error", "error": str(e)}
+            elif name == "find_image_pos":
+                from tools.image_finder_tool import ImageFinderTool
+                # 图找坐标功能
+                template_path = arguments.get("template_path")
+                image_path = arguments.get("image_path")
+                threshold = arguments.get("threshold", 0.7)
+                ocr_backend = arguments.get("ocr_backend", "easyocr")
+                lang = arguments.get("lang")
+                if not template_path or not image_path:
+                    return {"status": "error", "error": "缺少必要参数template_path或image_path"}
+                try:
+                    pos_tool = ImageFinderTool(ocr_backend=ocr_backend, lang=lang)
+                    result = pos_tool.find_image(image_path, template_path, threshold)
+                    return {"status": "success", "result": result}
+                except BaseException as e:
+                    return {"status": "error", "error": str(e)}
+            
             else:
                 return {"status": "error", "error": f"Unknown tool: {name}"}
         except BaseException as e:

@@ -24,3 +24,6 @@ pillow>=10.4.0
 easyocr>=1.7.2
 # 国内源下载torch全家桶
 # pip install torch torchvision torchaudio --index-url https://mirrors.nju.edu.cn/pytorch/whl/cu126
+
+# 图像处理
+opencv-python>=4.5.0

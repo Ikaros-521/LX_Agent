@@ -1,6 +1,7 @@
 import importlib
 from typing import Optional, List, Dict, Any
 
+from common.json_utils import dumps, loads
 from tools.ocr_backends.base import BaseOCR
 from tools.ocr_backends.easyocr_backend import EasyOCROCR
 from tools.ocr_backends.tesseract_backend import TesseractOCR
@@ -26,20 +27,22 @@ class TesseractOCR(BaseOCR):
             n = len(data['text'])
             for i in range(n):
                 if int(data['conf'][i]) > 0 and data['text'][i].strip():
+                    # 确保所有值都是Python原生类型
                     results.append({
-                        'text': data['text'][i],
-                        'left': data['left'][i],
-                        'top': data['top'][i],
-                        'width': data['width'][i],
-                        'height': data['height'][i],
-                        'conf': data['conf'][i],
-                        'line_num': data['line_num'][i],
-                        'word_num': data['word_num'][i],
-                        'block_num': data['block_num'][i],
-                        'par_num': data['par_num'][i],
-                        'level': data['level'][i],
+                        'text': str(data['text'][i]),
+                        'left': int(data['left'][i]),
+                        'top': int(data['top'][i]),
+                        'width': int(data['width'][i]),
+                        'height': int(data['height'][i]),
+                        'conf': float(data['conf'][i]),
+                        'line_num': int(data['line_num'][i]),
+                        'word_num': int(data['word_num'][i]),
+                        'block_num': int(data['block_num'][i]),
+                        'par_num': int(data['par_num'][i]),
+                        'level': int(data['level'][i]),
                     })
-            return results
+            # 确保结果可以被JSON序列化
+            return loads(dumps(results))
 
 class OCRFactory:
     @staticmethod
@@ -53,4 +56,4 @@ class OCRFactory:
 
 # 用法示例：
 # ocr = OCRFactory.create('tesseract', lang='chi_sim+eng')
-# text = ocr.recognize('test.png', detailed=True) 
+# text = ocr.recognize('test.png', detailed=True)

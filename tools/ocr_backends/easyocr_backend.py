@@ -38,13 +38,21 @@ class EasyOCROCR(BaseOCR):
             result = self.reader.readtext(image_path, detail=0)
             return '\n'.join(result)
         else:
+            from common.json_utils import dumps, loads
             result = self.reader.readtext(image_path, detail=1)
             # [(bbox, text, conf), ...]
             detailed_result = []
             for bbox, text, conf in result:
+                # 将numpy数组转换为Python列表
+                if hasattr(bbox, 'tolist'):
+                    bbox = bbox.tolist()
+                # 将numpy标量转换为Python标量
+                if hasattr(conf, 'item'):
+                    conf = conf.item()
                 detailed_result.append({
                     'text': text,
                     'bbox': bbox,
                     'conf': conf
                 })
-            return detailed_result 
+            # 确保结果可以被JSON序列化
+            return loads(dumps(detailed_result))

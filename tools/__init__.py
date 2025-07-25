@@ -14,6 +14,7 @@ from .mouse_keyboard_tool import MouseKeyboardTool
 from .sleep_tool import sleep_tool
 from .screenshot_tool import ScreenshotTool
 from .ocr_tool import OCRFactory
+from .image_finder_tool import ImageFinderTool
 
 __all__ = [
     'FileTool',
@@ -21,5 +22,6 @@ __all__ = [
     'MouseKeyboardTool',
     'sleep_tool',
     'ScreenshotTool',
-    'OCRFactory'
+    'OCRFactory',
+    'ImageFinderTool'
 ]

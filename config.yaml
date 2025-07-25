@@ -33,7 +33,7 @@ mcp:
       enabled: true
       priority: 10
       # 支持的能力
-      capabilities: ["list_directory", "read_file", "execute_shell", "mouse_click", "move_mouse", "key_press", "sleep", "ocr", "screenshot"]
+      capabilities: ["file_tool", "mouse_keyboard_tool", "process_tool", "image_finder_tool", "ocr_tool", "screenshot_tool", "sleep_tool"]
     # 云MCP（支持多个实例，示例）
     test:
       type: "cloud"
@@ -61,17 +61,15 @@ mcp:
 
 # 工具配置
 tools:
-  # 启用的工具模块
-  enabled:
-    - "file"
-    - "browser"
-    - "process"
   # 工具模块配置
   modules:
     file:
       allowed_paths:
         - "C:/Users"
-        - "D:/Projects"
+        - "D:/"
+        - "E:/"
+        - "F:/"
+        - "G:/"
       denied_paths:
         - "C:/Windows"
         - "C:/Program Files"

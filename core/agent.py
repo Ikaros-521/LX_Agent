@@ -304,7 +304,11 @@ class Agent:
                 last_command_signature = None
 
             # 4. 记录到history
-            history.append({"command": call, "result": result})
+            # 使用自定义JSON编码器处理可能包含numpy数据类型的结果
+            from common.json_utils import dumps, loads
+            # 先序列化再反序列化，确保所有numpy类型都被转换为Python原生类型
+            result_serializable = loads(dumps(result))
+            history.append({"command": call, "result": result_serializable})
             # 5. LLM中间总结
             summary = None
             if self.llm:
