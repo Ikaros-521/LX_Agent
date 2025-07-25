@@ -30,59 +30,50 @@ class MCPRouter:
     async def initialize(self) -> bool:
         """
         初始化所有MCP服务
-        
         Returns:
             bool: 初始化是否成功
         """
         if self.initialized:
             return True
-            
         mcp_config = self.config.get("mcp", {})
         services = mcp_config.get("services", {})
-        
-        # 创建并连接所有启用的MCP服务
         for name, service_config in services.items():
-            # 检查服务是否启用
             if not service_config.get("enabled", True):
                 logger.info(f"MCP service {name} is disabled, skipping")
                 continue
-                
-            # 创建MCP适配器
             mcp = MCPFactory.create(name, service_config)
             if not mcp:
                 logger.error(f"Failed to create MCP service {name}")
                 continue
-                
-            # 连接MCP服务
             try:
                 connect_method = mcp.connect
-                if inspect.iscoroutinefunction(connect_method):
+
+                try:
                     await connect_method()
                     self.mcps[name] = mcp
                     logger.info(f"MCP service {name} connected successfully")
-                else:
-                    if connect_method():
-                        self.mcps[name] = mcp
-                        logger.info(f"MCP service {name} connected successfully")
-                    else:
-                        logger.error(f"Failed to connect to MCP service {name}")
-            except Exception as e:
-                logger.error(f"Error connecting to MCP service {name}: {str(e)}")
-        
-        # 设置初始化标志
+                except BaseException as e:
+                    logger.error(f"Error connecting to MCP service {name}: {str(e)}，已跳过")
+                    continue
+            except BaseException as e:
+                logger.error(f"Error connecting to MCP service {name}: {str(e)}，已跳过")
+                continue
         self.initialized = len(self.mcps) > 0
         return self.initialized
     
-    def get_available_mcps(self) -> List[Tuple[str, BaseMCP]]:
+    async def get_available_mcps(self) -> List[Tuple[str, BaseMCP]]:
         """
         获取所有可用的MCP服务
-        
         Returns:
             List[Tuple[str, BaseMCP]]: 可用的MCP服务列表，每个元素为(名称, MCP实例)元组
         """
-        return [(name, mcp) for name, mcp in self.mcps.items() if mcp.is_available()]
+        available = []
+        for name, mcp in self.mcps.items():
+            if await mcp.is_available():
+                available.append((name, mcp))
+        return available
     
-    def select_mcp_by_capability(self, required_capabilities: List[str]) -> Optional[Tuple[str, BaseMCP]]:
+    async def select_mcp_by_capability(self, required_capabilities: List[str]) -> Optional[Tuple[str, BaseMCP]]:
         """
         根据所需能力选择合适的MCP服务
         
@@ -92,7 +83,7 @@ class MCPRouter:
         Returns:
             Optional[Tuple[str, BaseMCP]]: 选中的MCP服务，如果没有合适的则返回None
         """
-        available_mcps = self.get_available_mcps()
+        available_mcps = await self.get_available_mcps()
         if not available_mcps:
             return None
             
@@ -109,7 +100,7 @@ class MCPRouter:
         
         # 找到能够满足所有所需能力的MCP
         for name, mcp in sorted_mcps:
-            mcp_capabilities = mcp.get_capabilities()
+            mcp_capabilities = await mcp.get_capabilities()
             if all(cap in mcp_capabilities for cap in required_capabilities):
                 return name, mcp
                 
@@ -118,7 +109,7 @@ class MCPRouter:
         best_match_count = -1
         
         for name, mcp in sorted_mcps:
-            mcp_capabilities = mcp.get_capabilities()
+            mcp_capabilities = await mcp.get_capabilities()
             match_count = sum(1 for cap in required_capabilities if cap in mcp_capabilities)
             
             if match_count > best_match_count:
@@ -127,14 +118,14 @@ class MCPRouter:
                 
         return best_match
     
-    def select_mcp_by_priority(self) -> Optional[Tuple[str, BaseMCP]]:
+    async def select_mcp_by_priority(self) -> Optional[Tuple[str, BaseMCP]]:
         """
         根据优先级选择MCP服务
         
         Returns:
             Optional[Tuple[str, BaseMCP]]: 选中的MCP服务，如果没有可用的则返回None
         """
-        available_mcps = self.get_available_mcps()
+        available_mcps = await self.get_available_mcps()
         if not available_mcps:
             return None
             
@@ -147,14 +138,14 @@ class MCPRouter:
         
         return sorted_mcps[0] if sorted_mcps else None
     
-    def select_mcp_by_load_balance(self) -> Optional[Tuple[str, BaseMCP]]:
+    async def select_mcp_by_load_balance(self) -> Optional[Tuple[str, BaseMCP]]:
         """
         使用负载均衡策略选择MCP服务
         
         Returns:
             Optional[Tuple[str, BaseMCP]]: 选中的MCP服务，如果没有可用的则返回None
         """
-        available_mcps = self.get_available_mcps()
+        available_mcps = await self.get_available_mcps()
         if not available_mcps:
             return None
             
@@ -180,14 +171,14 @@ class MCPRouter:
             
         # 根据路由策略选择MCP
         if self.routing_strategy == "capability_match":
-            return self.select_mcp_by_capability(required_capabilities)
+            return await self.select_mcp_by_capability(required_capabilities)
         elif self.routing_strategy == "priority_first":
-            return self.select_mcp_by_priority()
+            return await self.select_mcp_by_priority()
         elif self.routing_strategy == "load_balance":
-            return self.select_mcp_by_load_balance()
+            return await self.select_mcp_by_load_balance()
         else:
             # 默认使用能力匹配策略
-            return self.select_mcp_by_capability(required_capabilities)
+            return await self.select_mcp_by_capability(required_capabilities)
     
     async def execute_command(self, command: str, required_capabilities: List[str] = None, **kwargs) -> Dict[str, Any]:
         """
@@ -223,12 +214,12 @@ class MCPRouter:
             result = await mcp.execute_command(command, **kwargs)
             result["mcp_name"] = name
             return result
-        except Exception as e:
+        except BaseException as e:
             # 如果执行失败，尝试使用其他MCP
             logger.error(f"Failed to execute command with MCP {name}: {str(e)}")
             
             # 获取其他可用的MCP
-            available_mcps = self.get_available_mcps()
+            available_mcps = await self.get_available_mcps()
             other_mcps = [(n, m) for n, m in available_mcps if n != name]
             
             if not other_mcps:
@@ -245,7 +236,7 @@ class MCPRouter:
                     result["mcp_name"] = other_name
                     result["fallback"] = True
                     return result
-                except Exception as other_e:
+                except BaseException as other_e:
                     logger.error(f"Failed to execute command with fallback MCP {other_name}: {str(other_e)}")
             
             # 所有MCP都失败
@@ -262,15 +253,19 @@ class MCPRouter:
         """
         for name, mcp in self.mcps.items():
             try:
-                mcp.disconnect()
+                disconnect_method = mcp.disconnect
+                import inspect
+                if inspect.iscoroutinefunction(disconnect_method):
+                    await disconnect_method()
+                else:
+                    disconnect_method()
                 logger.info(f"MCP service {name} disconnected")
-            except Exception as e:
+            except BaseException as e:
                 logger.error(f"Error disconnecting MCP service {name}: {str(e)}")
-        
         self.mcps.clear()
         self.initialized = False
 
-    def get_all_tools(self) -> List[Dict[str, Any]]:
+    async def get_all_tools(self) -> List[Dict[str, Any]]:
         """
         聚合所有可用MCP的工具列表，供LLM分析使用
         Returns:
@@ -279,15 +274,15 @@ class MCPRouter:
         all_tools = []
         for name, mcp in self.mcps.items():
             try:
-                tools_response = mcp.tools_list()
-                tools = tools_response.get("tools", [])
+                tools = await mcp.list_tools()
                 for tool in tools:
+                    tool = dict(tool)  # 确保是 dict
                     tool["mcp_name"] = name  # 标记工具来源
                     all_tools.append(tool)
-            except Exception as e:
-                logger.warning(f"MCP {name} tools_list error: {e}")
+            except BaseException as e:
+                logger.warning(f"MCP {name} list_tools error: {e}")
         return all_tools
-    
+
     async def execute_tool_call(self, tool_name: str, arguments: Dict[str, Any]) -> Dict[str, Any]:
         """
         执行工具调用，自动路由到对应的MCP
@@ -299,11 +294,10 @@ class MCPRouter:
         """
         for name, mcp in self.mcps.items():
             try:
-                tools_response = mcp.tools_list()
-                tools = tools_response.get("tools", [])
+                tools = await mcp.list_tools()
                 tool_names = [tool["name"] for tool in tools]
                 if tool_name in tool_names:
-                    return mcp.tools_call(tool_name, arguments)
-            except Exception as e:
-                logger.warning(f"MCP {name} tools_call error: {e}")
+                    return await mcp.call_tool(tool_name, arguments)
+            except BaseException as e:
+                logger.warning(f"MCP {name} call_tool error: {e}")
         return {"status": "error", "error": f"Tool {tool_name} not found"}
