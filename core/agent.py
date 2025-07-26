@@ -298,14 +298,46 @@ class Agent:
             # 3. 执行工具
             result = await self.mcp_router.execute_tool_call(name, arguments)
             logger.info(f"[{name}] 执行结果: {result}")
-            print(f"[{name}] 执行结果: {result}", flush=True)
 
-            # 根据执行结果更新重复追踪状态
-            if result.get("status") == "success":
-                last_command_signature = current_command_signature
+            # 判断result是否是dict，如果不是则转换为dict
+            if not isinstance(result, dict):
+                # from mcp.types import CallToolResult, ContentBlock
+                # 处理 CallToolResult 对象
+                if hasattr(result, 'isError') and not result.isError:
+                    # 解析 content 字段，提取文本内容
+                    content_text = ""
+                    if hasattr(result, 'content') and result.content:
+                        for block in result.content:
+                            if hasattr(block, 'type') and block.type == "text":
+                                content_text += block.text
+                            elif hasattr(block, 'text'):
+                                # 直接有 text 属性的情况
+                                content_text += block.text
+                    
+                    # 如果有 structuredContent，也包含进去
+                    if hasattr(result, 'structuredContent') and result.structuredContent:
+                        content_text += f"\n结构化内容: {result.structuredContent}"
+                    
+                    last_command_signature = current_command_signature
+                    result = {"status": "success", "result": content_text}
+                else:
+                    # 如果命令执行失败，则重复链中断
+                    last_command_signature = None
+                    error_content = ""
+                    if hasattr(result, 'content') and result.content:
+                        for block in result.content:
+                            if hasattr(block, 'type') and block.type == "text":
+                                error_content += block.text
+                            elif hasattr(block, 'text'):
+                                error_content += block.text
+                    result = {"status": "error", "result": error_content}
             else:
-                # 如果命令执行失败，则重复链中断
-                last_command_signature = None
+                # 根据执行结果更新重复追踪状态
+                if result.get("status") == "success":
+                    last_command_signature = current_command_signature
+                else:
+                    # 如果命令执行失败，则重复链中断
+                    last_command_signature = None
 
             # 4. 记录到history
             # 使用自定义JSON编码器处理可能包含numpy数据类型的结果
@@ -373,3 +405,4 @@ class Agent:
             logger.info(f"最终总结: {final_summary}")
         ask_clear_history(history)
         return {"status": "success", "results": history, "final_summary": final_summary}
+

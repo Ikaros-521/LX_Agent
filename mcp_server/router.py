@@ -297,7 +297,41 @@ class MCPRouter:
                 tools = await mcp.list_tools()
                 tool_names = [tool["name"] for tool in tools]
                 if tool_name in tool_names:
-                    return await mcp.call_tool(tool_name, arguments)
+                    result = await mcp.call_tool(tool_name, arguments)
+                    
+                    # 处理 CallToolResult 对象，转换为标准字典格式
+                    if not isinstance(result, dict):
+                        # 处理 CallToolResult 对象
+                        if hasattr(result, 'isError') and not result.isError:
+                            # 解析 content 字段，提取文本内容
+                            content_text = ""
+                            if hasattr(result, 'content') and result.content:
+                                for block in result.content:
+                                    if hasattr(block, 'type') and block.type == "text":
+                                        content_text += block.text
+                                    elif hasattr(block, 'text'):
+                                        # 直接有 text 属性的情况
+                                        content_text += block.text
+                            
+                            # 如果有 structuredContent，也包含进去
+                            if hasattr(result, 'structuredContent') and result.structuredContent:
+                                content_text += f"\n结构化内容: {result.structuredContent}"
+                            
+                            return {"status": "success", "result": content_text, "mcp_name": name}
+                        else:
+                            # 如果命令执行失败
+                            error_content = ""
+                            if hasattr(result, 'content') and result.content:
+                                for block in result.content:
+                                    if hasattr(block, 'type') and block.type == "text":
+                                        error_content += block.text
+                                    elif hasattr(block, 'text'):
+                                        error_content += block.text
+                            return {"status": "error", "result": error_content, "mcp_name": name}
+                    else:
+                        # 如果已经是字典格式，直接返回
+                        result["mcp_name"] = name
+                        return result
             except BaseException as e:
                 logger.warning(f"MCP {name} call_tool error: {e}")
         return {"status": "error", "error": f"Tool {tool_name} not found"}
