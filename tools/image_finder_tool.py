@@ -194,3 +194,74 @@ class ImageFinderTool:
                     i += 1
         
         return keep
+
+def get_capabilities():
+    return ["image_finder_tool"]
+
+def get_tools():
+    return [
+        {
+            "name": "find_text_pos",
+            "description": "在图像中查找指定文本的位置",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "image_path": {"type": "string", "description": "图像路径"},
+                    "text": {"type": "string", "description": "要查找的文本"},
+                    "threshold": {"type": "number", "description": "匹配阈值，越高要求越精确", "default": 0.7},
+                    "ocr_backend": {"type": "string", "description": "OCR后端，可选：tesseract、easyocr", "default": "easyocr"},
+                    "lang": {"type": "string", "description": "OCR语言，如'ch_sim'、'en'、'ch_sim+en'，可选"}
+                },
+                "required": ["image_path", "text"]
+            }
+        },
+        {
+            "name": "find_image_pos",
+            "description": "在图像中查找模板图像的位置（模板匹配）",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "image_path": {"type": "string", "description": "要搜索的图像路径"},
+                    "template_path": {"type": "string", "description": "模板图像路径"},
+                    "threshold": {"type": "number", "description": "匹配阈值，越高要求越精确", "default": 0.8},
+                    "ocr_backend": {"type": "string", "description": "OCR后端，可选：tesseract、easyocr", "default": "easyocr"},
+                    "lang": {"type": "string", "description": "OCR语言，如'ch_sim'、'en'、'ch_sim+en'，可选"}
+                },
+                "required": ["image_path", "template_path"]
+            }
+        }
+    ]
+
+def call_tool(name, arguments):
+    if name == "find_text_pos":
+        # 文找坐标功能
+        text = arguments.get("text")
+        image_path = arguments.get("image_path")
+        threshold = arguments.get("threshold", 0.7)
+        ocr_backend = arguments.get("ocr_backend", "easyocr")
+        lang = arguments.get("lang")
+        if not text or not image_path:
+            return {"status": "error", "error": "缺少必要参数text或image_path"}
+        try:
+            pos_tool = ImageFinderTool(ocr_backend=ocr_backend, lang=lang)
+            result = pos_tool.find_text(image_path, text, threshold)
+            return {"status": "success", "result": result}
+        except BaseException as e:
+            return {"status": "error", "error": str(e)}
+    elif name == "find_image_pos":
+        # 图找坐标功能
+        template_path = arguments.get("template_path")
+        image_path = arguments.get("image_path")
+        threshold = arguments.get("threshold", 0.7)
+        ocr_backend = arguments.get("ocr_backend", "easyocr")
+        lang = arguments.get("lang")
+        if not template_path or not image_path:
+            return {"status": "error", "error": "缺少必要参数template_path或image_path"}
+        try:
+            pos_tool = ImageFinderTool(ocr_backend=ocr_backend, lang=lang)
+            result = pos_tool.find_image(image_path, template_path, threshold)
+            return {"status": "success", "result": result}
+        except BaseException as e:
+            return {"status": "error", "error": str(e)}
+    else:
+        return {"status": "error", "error": f"Unknown tool: {name}"}

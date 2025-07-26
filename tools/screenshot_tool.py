@@ -73,3 +73,55 @@ class ScreenshotTool:
         img = ImageGrab.grab(bbox)
         img.save(output_path)
         return output_path 
+
+def get_capabilities():
+    return ["screenshot_tool"]
+
+def get_tools():
+    return [
+        {
+            "name": "screenshot",
+            "description": "截图工具，支持全屏、区域、窗口截图",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "output_path": {"type": "string", "description": "保存图片的路径"},
+                    "mode": {"type": "string", "enum": ["screen", "region", "window"], "description": "截图模式"},
+                    "x": {"type": "integer", "description": "区域截图起点X坐标，可选"},
+                    "y": {"type": "integer", "description": "区域截图起点Y坐标，可选"},
+                    "width": {"type": "integer", "description": "区域截图宽度，可选"},
+                    "height": {"type": "integer", "description": "区域截图高度，可选"},
+                    "window_title": {"type": "string", "description": "窗口标题，仅窗口截图时需要"}
+                },
+                "required": ["output_path", "mode"]
+            }
+        }
+    ]
+
+def call_tool(name, arguments):
+    if name == "screenshot":
+        mode = arguments.get("mode")
+        output_path = arguments.get("output_path")
+        try:
+            if mode == "screen":
+                path = ScreenshotTool.capture_screen(output_path)
+            elif mode == "region":
+                x = arguments.get("x")
+                y = arguments.get("y")
+                width = arguments.get("width")
+                height = arguments.get("height")
+                if None in (x, y, width, height):
+                    return {"status": "error", "error": "区域截图需提供x, y, width, height"}
+                path = ScreenshotTool.capture_region(x, y, width, height, output_path)
+            elif mode == "window":
+                window_title = arguments.get("window_title")
+                if not window_title:
+                    return {"status": "error", "error": "窗口截图需提供window_title"}
+                path = ScreenshotTool.capture_window(window_title, output_path)
+            else:
+                return {"status": "error", "error": f"未知截图模式: {mode}"}
+            return {"status": "success", "image_path": path}
+        except BaseException as e:
+            return {"status": "error", "error": str(e)}
+    else:
+        return {"status": "error", "error": f"Unknown tool: {name}"} 

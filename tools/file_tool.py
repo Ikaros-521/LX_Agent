@@ -378,3 +378,109 @@ class FileTool:
                 "status": "error",
                 "error": str(e)
             }
+
+def get_capabilities():
+    return ["file_tool"]
+
+def get_tools():
+    return [
+        {
+            "name": "list_directory",
+            "description": "列出目录内容",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "path": {"type": "string", "description": "目录路径"}
+                },
+                "required": ["path"]
+            }
+        },
+        {
+            "name": "read_file",
+            "description": "读取文件内容",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "path": {"type": "string", "description": "文件路径"}
+                },
+                "required": ["path"]
+            }
+        },
+        {
+            "name": "write_file",
+            "description": "写入文件内容",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "path": {"type": "string", "description": "文件路径"},
+                    "content": {"type": "string", "description": "要写入的内容"}
+                },
+                "required": ["path", "content"]
+            }
+        },
+        {
+            "name": "delete_file",
+            "description": "删除文件或目录",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "path": {"type": "string", "description": "文件或目录路径"}
+                },
+                "required": ["path"]
+            }
+        },
+        {
+            "name": "copy_file",
+            "description": "复制文件或目录",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "src_path": {"type": "string", "description": "源路径"},
+                    "dst_path": {"type": "string", "description": "目标路径"}
+                },
+                "required": ["src_path", "dst_path"]
+            }
+        },
+        {
+            "name": "move_file",
+            "description": "移动文件或目录",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "src_path": {"type": "string", "description": "源路径"},
+                    "dst_path": {"type": "string", "description": "目标路径"}
+                },
+                "required": ["src_path", "dst_path"]
+            }
+        },
+        {
+            "name": "get_file_info",
+            "description": "获取文件或目录信息",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "path": {"type": "string", "description": "文件或目录路径"}
+                },
+                "required": ["path"]
+            }
+        }
+    ]
+
+def call_tool(name, arguments):
+    tool = FileTool(config={})
+    if name == "list_directory":
+        return tool.list_directory(arguments.get("path"))
+    elif name == "read_file":
+        return tool.read_file(arguments.get("path"))
+    elif name == "write_file":
+        return tool.write_file(arguments.get("path"), arguments.get("content"))
+    elif name == "delete_file":
+        return tool.delete_file(arguments.get("path"))
+    elif name == "copy_file":
+        return tool.copy_file(arguments.get("src_path"), arguments.get("dst_path"))
+    elif name == "move_file":
+        return tool.move_file(arguments.get("src_path"), arguments.get("dst_path"))
+    elif name == "get_file_info":
+        return tool.get_file_info(arguments.get("path"))
+    else:
+        return {"status": "error", "error": f"Unknown tool: {name}"}

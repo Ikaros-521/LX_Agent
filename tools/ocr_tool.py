@@ -57,3 +57,52 @@ class OCRFactory:
 # 用法示例：
 # ocr = OCRFactory.create('tesseract', lang='chi_sim+eng')
 # text = ocr.recognize('test.png', detailed=True)
+
+def get_capabilities():
+    return ["ocr_tool"]
+
+def get_tools():
+    return [
+        {
+            "name": "ocr",
+            "description": "OCR识别图片中的文字（支持多后端和多语言，lang如'ch_sim'、'en'、'ch_sim+en'）。detailed=True时返回每个文本的坐标、置信度等结构化信息，detailed=False时仅返回纯文本。",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "image_path": {"type": "string", "description": "图片文件路径"},
+                    "backend": {"type": "string", "description": "OCR后端，可选：tesseract、easyocr", "default": "easyocr"},
+                    "lang": {"type": "string", "description": "OCR语言，如'ch_sim'、'en'、'ch_sim+en'，可选"},
+                    "detailed": {"type": "boolean", "description": "是否返回详细结构化数据和坐标，True时返回每个文本的坐标、置信度等信息，False时仅返回纯文本", "default": False}
+                },
+                "required": ["image_path"]
+            }
+        }
+    ]
+
+def call_tool(name, arguments):
+    if name == "ocr":
+        import os
+        from common.json_utils import dumps, loads
+        image_path = arguments.get("image_path")
+        backend = arguments.get("backend", "easyocr")
+        lang = arguments.get("lang")
+        detailed = arguments.get("detailed", False)
+        if not image_path:
+            return {"status": "error", "error": "缺少图片路径"}
+        # 路径修正：相对路径转绝对路径
+        if not os.path.isabs(image_path):
+            image_path = os.path.abspath(image_path)
+        try:
+            ocr = OCRFactory.create(backend, lang=lang)
+            result = ocr.recognize(image_path, lang=lang, detailed=detailed)
+            # 使用自定义JSON编码器处理可能包含numpy数据类型的结果
+            # 先序列化再反序列化，确保所有numpy类型都被转换为Python原生类型
+            result_serializable = loads(dumps(result))
+            if detailed:
+                return {"status": "success", "result": result_serializable}
+            else:
+                return {"status": "success", "text": result_serializable}
+        except BaseException as e:
+            return {"status": "error", "error": str(e)}
+    else:
+        return {"status": "error", "error": f"Unknown tool: {name}"}

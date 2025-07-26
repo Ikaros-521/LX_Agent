@@ -293,3 +293,77 @@ class ProcessTool:
                 "error": str(e),
                 "command": command
             }
+
+def get_capabilities():
+    return ["process_tool"]
+
+def get_tools():
+    return [
+        {
+            "name": "start_process",
+            "description": "启动进程",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "command": {"type": "string", "description": "要执行的命令"}
+                },
+                "required": ["command"]
+            }
+        },
+        {
+            "name": "stop_process",
+            "description": "停止进程",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "pid": {"type": "integer", "description": "进程ID"}
+                },
+                "required": ["pid"]
+            }
+        },
+        {
+            "name": "list_processes",
+            "description": "列出所有进程",
+            "inputSchema": {
+                "type": "object",
+                "properties": {}
+            }
+        },
+        {
+            "name": "get_process_info",
+            "description": "获取进程信息",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "pid": {"type": "integer", "description": "进程ID"}
+                },
+                "required": ["pid"]
+            }
+        },
+        {
+            "name": "execute_command",
+            "description": "执行命令并返回结果",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "command": {"type": "string", "description": "要执行的命令"}
+                },
+                "required": ["command"]
+            }
+        }
+    ]
+
+def call_tool(name, arguments):
+    tool = ProcessTool(config={})
+    if name == "start_process":
+        return tool.start_process(arguments.get("command"))
+    elif name == "stop_process":
+        return tool.stop_process(arguments.get("pid"))
+    elif name == "list_processes":
+        return tool.list_processes()
+    elif name == "get_process_info":
+        return tool.get_process_info(arguments.get("pid"))
+    elif name == "execute_command":
+        return tool.execute_command(arguments.get("command"))
+    else:
+        return {"status": "error", "error": f"Unknown tool: {name}"}

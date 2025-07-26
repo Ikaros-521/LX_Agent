@@ -84,7 +84,7 @@ security:
   # 是否自动跳过高危操作确认（true=全自动，false=人工确认）
   auto_continue_dangerous: false
   # 是否自动跳过所有人工交互（true=全自动流程，false=每步人工确认）
-  auto_continue_interactive: true
+  auto_continue_interactive: false
   dangerous_tools:
     - execute_shell
     - start_process

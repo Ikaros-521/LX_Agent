@@ -73,4 +73,84 @@ class MouseKeyboardTool:
             return {"status": "success", "text": text}
         except BaseException as e:
             logger.error(f"Failed to type text: {e}")
-            return {"status": "error", "error": str(e)} 
+            return {"status": "error", "error": str(e)}
+
+def get_capabilities():
+    return ["mouse_keyboard_tool"]
+
+def get_tools():
+    return [
+        {
+            "name": "move_mouse",
+            "description": "移动鼠标到指定坐标",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "x": {"type": "integer", "description": "X坐标"},
+                    "y": {"type": "integer", "description": "Y坐标"}
+                },
+                "required": ["x", "y"]
+            }
+        },
+        {
+            "name": "mouse_click",
+            "description": "点击鼠标（支持left/right）",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "button": {"type": "string", "enum": ["left", "right"], "description": "鼠标按键"}
+                },
+                "required": ["button"]
+            }
+        },
+        {
+            "name": "mouse_scroll",
+            "description": "鼠标滚轮滚动",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "delta": {"type": "integer", "description": "滚动的距离（正负表示方向）"}
+                },
+                "required": ["delta"]
+            }
+        },
+        {
+            "name": "key_press",
+            "description": "按下键盘按键（通过key_code）",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "key_code": {"type": "integer", "description": "虚拟键码（VK）"},
+                    "duration": {"type": "number", "description": "按下持续时间（秒）", "default": 0.05}
+                },
+                "required": ["key_code"]
+            }
+        },
+        {
+            "name": "type_text",
+            "description": "输入一串文本（逐字模拟键盘）",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "text": {"type": "string", "description": "要输入的文本"},
+                    "interval": {"type": "number", "description": "每个字符间隔（秒）", "default": 0.05}
+                },
+                "required": ["text"]
+            }
+        }
+    ]
+
+def call_tool(name, arguments):
+    tool = MouseKeyboardTool()
+    if name == "move_mouse":
+        return tool.move_mouse(arguments.get("x"), arguments.get("y"))
+    elif name == "mouse_click":
+        return tool.mouse_click(arguments.get("button", "left"))
+    elif name == "mouse_scroll":
+        return tool.mouse_scroll(arguments.get("delta", 0))
+    elif name == "key_press":
+        return tool.key_press(arguments.get("key_code"), arguments.get("duration", 0.05))
+    elif name == "type_text":
+        return tool.type_text(arguments.get("text"), arguments.get("interval", 0.05))
+    else:
+        return {"status": "error", "error": f"Unknown tool: {name}"} 
