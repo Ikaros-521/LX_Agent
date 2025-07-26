@@ -9,8 +9,8 @@ llm:
     # OpenAI API
     openai:
       type: "openai"
-      base_url: "http://47.96.136.235:3000/v1"
-      api_key: "sk-ZrTz6C3ZGsv2jCICA28f458921D74a0c829d1eA4AcC9Af55"
+      base_url: "http://47.96.1.2:3000/v1"
+      api_key: "sk-"
       model: "Qwen/Qwen3-8B"
       temperature: 0.7
       max_tokens: 8192
@@ -81,6 +81,10 @@ tools:
 security:
   # 是否需要二次确认shell命令
   shell_confirm: true
+  # 是否自动跳过高危操作确认（true=全自动，false=人工确认）
+  auto_continue_dangerous: false
+  # 是否自动跳过所有人工交互（true=全自动流程，false=每步人工确认）
+  auto_continue_interactive: true
   dangerous_tools:
     - execute_shell
     - start_process

@@ -141,10 +141,12 @@ class Agent:
         # 检查危险工具
         security_config = self.config.get_security_config()
         dangerous_tools = security_config.get("dangerous_tools", ["execute_shell", "start_process"])
+        auto_continue_dangerous = security_config.get("auto_continue_dangerous", False)
         need_confirm_calls = []
         for call in tool_calls:
             if call.get("name") in dangerous_tools and security_config.get("shell_confirm", True):
-                need_confirm_calls.append(call)
+                if not auto_continue_dangerous:
+                    need_confirm_calls.append(call)
         if need_confirm_calls:
             return {
                 "status": "need_confirm",
@@ -283,14 +285,16 @@ class Agent:
             # 2. 高危操作检测
             security_config = self.config.get_security_config()
             dangerous_tools = security_config.get("dangerous_tools", ["execute_shell", "start_process"])
+            auto_continue_dangerous = security_config.get("auto_continue_dangerous", False)
             if name in dangerous_tools and security_config.get("shell_confirm", True):
-                print(f"检测到高危操作: {name}，参数: {arguments}，是否确认执行？(yes/确认/y)：", flush=True)
-                confirm = input().strip().lower()
-                if confirm not in ("确认", "yes", "y"):
-                    logger.info("用户取消高危操作")
-                    history.append({"command": call, "result": {"status": "cancelled"}})
-                    step += 1
-                    continue
+                if not auto_continue_dangerous:
+                    print(f"检测到高危操作: {name}，参数: {arguments}，是否确认执行？(yes/确认/y)：", flush=True)
+                    confirm = input().strip().lower()
+                    if confirm not in ("确认", "yes", "y"):
+                        logger.info("用户取消高危操作")
+                        history.append({"command": call, "result": {"status": "cancelled"}})
+                        step += 1
+                        continue
             # 3. 执行工具
             result = await self.mcp_router.execute_tool_call(name, arguments)
             logger.info(f"[{name}] 执行结果: {result}")
@@ -321,7 +325,9 @@ class Agent:
                 history[-1]["summary"] = summary
 
             # 6. 用户介入决策或自动继续
-            if not auto_continue:
+            security_config = self.config.get_security_config()
+            auto_continue_interactive = security_config.get("auto_continue_interactive", False)
+            if not (auto_continue or auto_continue_interactive):
                 while True:
                     print("请输入操作: [Enter继续/c终止/e编辑/r重新规划/clear清空历史]：", end='', flush=True)
                     user_input = input().strip().lower()
