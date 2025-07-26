@@ -83,28 +83,10 @@ mcp:
 
 ## 使用方法
 
-### 命令行模式
-
-```bash
-python main.py "your command here"
-```
-
 ### 交互模式
 
 ```bash
 python main.py
-```
-
-### 指定配置文件
-
-```bash
-python main.py -c custom_config.yaml
-```
-
-### 启用详细日志
-
-```bash
-python main.py -v
 ```
 
 ## 本地部署MCP服务
@@ -115,45 +97,13 @@ python main.py -v
 
 ## 扩展开发
 
-### 添加自定义 MCP 适配器
+### 本地工具开发
 
-1. 创建自定义 MCP 适配器类，继承 `BaseMCP` 抽象类
-2. 实现所有抽象方法
-3. 在配置文件中添加自定义 MCP 服务配置
+在 `mcp_server/tools` 文件夹下创建 某个`_tool.py`文件，会自动搜索这个工具注册并获取其内部定义的能力。
 
-```python
-from mcp.base import BaseMCP
+### 云端工具开发
 
-class CustomMCPAdapter(BaseMCP):
-    def __init__(self, config):
-        self.config = config
-        self.capabilities = config.get("capabilities", [])
-        self.connected = False
-        
-    def connect(self):
-        # 实现连接逻辑
-        pass
-        
-    def disconnect(self):
-        # 实现断开连接逻辑
-        pass
-        
-    def execute_command(self, command, **kwargs):
-        # 实现命令执行逻辑
-        pass
-        
-    def get_status(self):
-        # 实现获取状态逻辑
-        pass
-        
-    def get_capabilities(self):
-        # 返回支持的能力列表
-        return self.capabilities
-        
-    def is_available(self):
-        # 检查是否可用
-        return self.connected
-```
+在 `mcp_server/async_cloud_mcp.py` 中添加新的工具类，并在 `AsyncCloudMCPAdapter` 的 `_get_tools` 方法中注册该工具。
 
 ## 许可证
 
