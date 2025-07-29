@@ -27,3 +27,8 @@ easyocr>=1.7.2
 
 # 图像处理
 opencv-python>=4.5.0
+
+# FastAPI相关
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+python-multipart>=0.0.6
